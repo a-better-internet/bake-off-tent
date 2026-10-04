@@ -217,9 +217,9 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xbcd8ea);
 scene.fog = new THREE.Fog(0xcadeea, 55, 330);
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.04, 700);
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.12, 620);
 let orthoHalf = 26;
-const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, -200, 600);
+const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, -200, 700);
 function sizeOrtho(){
   const a = innerWidth/innerHeight;
   ortho.left = -orthoHalf*a; ortho.right = orthoHalf*a;
@@ -276,19 +276,60 @@ function texFloor(){
   }
   return finish(c,1,1);
 }
-function texFabric(){
-  const c = cvs(256,256), g = c.getContext('2d');
-  g.fillStyle='#f6f4ee'; g.fillRect(0,0,256,256);
-  for(let i=0;i<256;i+=3){                                  // weave
-    g.fillStyle='rgba(214,212,204,.5)'; g.fillRect(i,0,1,256);
-    g.fillStyle='rgba(222,220,212,.45)'; g.fillRect(0,i,256,1);
+// PVC marquee canvas: panels welded together, so what reads is the seam
+// every couple of metres, the stitching along it, and the weathering.
+// One tile = one panel; the uv scale on each surface decides the real width.
+function paintCanvas(bump){
+  const S = 512, c = cvs(S,S), g = c.getContext('2d');
+  g.fillStyle = bump ? '#808080' : '#f4f2ea'; g.fillRect(0,0,S,S);
+  if(!bump){
+    // cloudy translucency — light does not come through evenly
+    for(let i=0;i<90;i++){
+      const x=rnd()*S, y=rnd()*S, r=rr(40,170);
+      const gr=g.createRadialGradient(x,y,0,x,y,r);
+      const t=rr(.02,.075), w=rnd()<.5;
+      gr.addColorStop(0,'rgba('+(w?'255,255,252':'206,206,198')+','+t+')');
+      gr.addColorStop(1,'rgba(255,255,255,0)');
+      g.fillStyle=gr; g.beginPath(); g.arc(x,y,r,0,6.3); g.fill();
+    }
+    // woven scrim showing through the coating
+    for(let i=0;i<S;i+=4){
+      g.fillStyle='rgba(205,204,196,.30)'; g.fillRect(i,0,1.4,S);
+      g.fillStyle='rgba(214,213,205,.24)'; g.fillRect(0,i,S,1.4);
+    }
+    // grime gathering towards the foot of the panel
+    const gr2=g.createLinearGradient(0,S*.72,0,S);
+    gr2.addColorStop(0,'rgba(186,183,168,0)'); gr2.addColorStop(1,'rgba(172,168,150,.30)');
+    g.fillStyle=gr2; g.fillRect(0,S*.72,S,S*.28);
+    for(let i=0;i<260;i++){                                   // streaks and specks
+      g.fillStyle='rgba(168,165,150,'+rr(.02,.09)+')';
+      g.fillRect(rnd()*S, rr(S*.45,S), rr(1,3), rr(4,34));
+    }
   }
-  for(let i=0;i<500;i++){
-    g.fillStyle='rgba(188,186,178,'+rr(.02,.10)+')';
-    g.fillRect(rnd()*256, rnd()*256, rr(1,5), rr(1,2));
+  // the welded seam up each edge of the panel, with its stitch line
+  for(const sx of [0, S]){
+    g.save(); g.translate(sx,0);
+    g.fillStyle = bump ? '#c8c8c8' : 'rgba(228,226,216,.95)'; g.fillRect(-9,0,18,S);
+    g.fillStyle = bump ? '#6a6a6a' : 'rgba(176,173,160,.5)';  g.fillRect(-11,0,2.5,S);
+    g.fillStyle = bump ? '#6a6a6a' : 'rgba(176,173,160,.5)';  g.fillRect(8.5,0,2.5,S);
+    g.fillStyle = bump ? '#f0f0f0' : 'rgba(255,255,255,.55)'; g.fillRect(-7,0,2,S);
+    g.strokeStyle = bump ? '#4a4a4a' : 'rgba(150,147,134,.55)';
+    g.lineWidth = bump ? 2.4 : 1.6; g.setLineDash([7,6]);
+    g.beginPath(); g.moveTo(-4.5,0); g.lineTo(-4.5,S); g.stroke();
+    g.beginPath(); g.moveTo(4.5,0);  g.lineTo(4.5,S);  g.stroke();
+    g.setLineDash([]); g.restore();
+  }
+  // slack creasing fanning off the seams
+  for(let i=0;i<22;i++){
+    const y=rnd()*S, len=rr(40,170), x0=rnd()<.5 ? rr(10,90) : rr(S-90,S-10);
+    g.strokeStyle = bump ? 'rgba(110,110,110,.35)' : 'rgba(206,204,195,.26)';
+    g.lineWidth=rr(1,2.6); g.beginPath(); g.moveTo(x0,y);
+    g.bezierCurveTo(x0+len*.4, y+rr(-16,16), x0+len*.7, y+rr(-16,16), x0+len, y+rr(-10,10));
+    g.stroke();
   }
   return finish(c,1,1);
 }
+function texFabric(){ return paintCanvas(false); }
 function texGrass(){
   const c = cvs(512,512), g = c.getContext('2d');
   g.fillStyle='#71944f'; g.fillRect(0,0,512,512);
@@ -378,22 +419,32 @@ function texTowel(a,b){
   for(let i=0;i<220;i++) g.fillRect(rnd()*128, rnd()*128, 2, 1);
   return finish(c,1,1);
 }
-function texChalk(){
-  const c = cvs(512,256), g = c.getContext('2d');
+const CHALLENGES = [
+  ['Signature', 'Bake', '2 hours'],
+  ['Technical', 'Bake', '1¼ hours'],
+  ['Showstopper', 'Bake', '4 hours'],
+  ['Biscuit', 'Week', '2½ hours'],
+  ['Bread', 'Week', '3 hours'],
+  ['Pâtisserie', 'Week', '3½ hours']
+];
+const chalkCanvas = cvs(512,256);
+function drawChalk(n){
+  const [a,b,t] = CHALLENGES[n % CHALLENGES.length], g = chalkCanvas.getContext('2d');
   g.fillStyle='#2f3a33'; g.fillRect(0,0,512,256);
-  for(let i=0;i<2600;i++){
+  for(let i=0;i<2600;i++){                       // chalk dust left on the slate
     g.fillStyle='rgba(225,235,228,'+rr(.01,.05)+')';
     g.fillRect(rnd()*512, rnd()*256, rr(1,7), rr(1,2));
   }
   g.fillStyle='#eef3ea'; g.textAlign='center';
-  g.font='italic 56px Georgia,serif';  g.fillText('Signature', 256, 84);
-  g.font='italic 40px Georgia,serif';  g.fillText('Bake', 256, 140);
+  g.font='italic 56px Georgia,serif'; g.fillText(a, 256, 84);
+  g.font='italic 40px Georgia,serif'; g.fillText(b, 256, 140);
   g.strokeStyle='rgba(238,243,234,.75)'; g.lineWidth=3;
   g.beginPath(); g.moveTo(150,166); g.lineTo(362,166); g.stroke();
   g.font='italic 25px Georgia,serif'; g.fillStyle='rgba(238,243,234,.85)';
-  g.fillText('2 hours', 256, 206);
-  return finish(c,1,1);
+  g.fillText(t, 256, 206);
+  if(T && T.chalk) T.chalk.needsUpdate = true;
 }
+function texChalk(){ drawChalk(0); return finish(chalkCanvas,1,1); }
 function texBunting(cols){
   const c = cvs(256,256), g = c.getContext('2d');
   g.fillStyle=cols; g.fillRect(0,0,256,256);
@@ -405,8 +456,10 @@ function texBunting(cols){
   return finish(c,1,1);
 }
 
-const T = {
+let T = null;
+T = {
   wood:   texWood(),
+  fabricBump: paintCanvas(true),
   floor:  texFloor(),
   fabric: texFabric(),
   grass:  texGrass(),
@@ -417,7 +470,8 @@ const T = {
 };
 T.floor.repeat.set(14, 28);
 T.grass.repeat.set(90, 90);
-T.fabric.repeat.set(6, 3);
+T.fabric.repeat.set(1, 1);
+T.fabricBump.repeat.set(1, 1);
 
 /* ------------------------------------------------------------------ */
 /* 3 · Shared materials & geometry                                     */
@@ -429,11 +483,13 @@ const M = {
   // the marquee skin: translucent so the lawn, the trees and the weather
   // all read straight through the walls — you are inside a lit lantern
   canvas: new THREE.MeshStandardMaterial({
-            map:T.fabric, color:0xffffff, roughness:.93, side:THREE.DoubleSide,
-            transparent:true, opacity:.93, emissive:0xdfe8ee, emissiveIntensity:.26 }),
+            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.035,
+            color:0xf7f6f1, roughness:.95, side:THREE.DoubleSide,
+            transparent:true, opacity:.94, emissive:0xdfe8ee, emissiveIntensity:.24 }),
   roof:   new THREE.MeshStandardMaterial({
-            map:T.fabric, color:0xfbfaf6, roughness:.95, side:THREE.DoubleSide,
-            transparent:true, opacity:.88, emissive:0xe9f1f6, emissiveIntensity:.34 }),
+            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.045,
+            color:0xf9f8f3, roughness:.96, side:THREE.DoubleSide,
+            transparent:true, opacity:.90, emissive:0xe9f1f6, emissiveIntensity:.32 }),
   clear:  new THREE.MeshPhysicalMaterial({
             color:0xdfeef2, roughness:.08, metalness:0, transparent:true, opacity:.22,
             side:THREE.DoubleSide }),
@@ -495,6 +551,11 @@ function shadeOn(m, cast, recv){ m.castShadow = !!cast; m.receiveShadow = !!recv
 /* ------------------------------------------------------------------ */
 const COL = [];
 function addCollider(minX,maxX,minZ,maxZ){ COL.push({minX,maxX,minZ,maxZ}); }
+
+// registries — declared up here because the lawn is dressed before the tent
+const DOORS = [];   // { g, axis, open, t, target, speed }
+const AUTO  = [];   // doors that open on approach
+const PROPS = [];   // { x, z, r, label, verb, act }
 function colliderFor(m, w, d){            // axis-aligned box from a centre
   addCollider(m.position.x-w/2, m.position.x+w/2, m.position.z-d/2, m.position.z+d/2);
 }
@@ -644,7 +705,7 @@ trees.push(treeAt(23.5, -7, 1.6, 'oak'));    addCollider(22.9,24.1,-7.6,-6.4);
 
 // ---- hedges: the garden wall you can't walk through -----------------
 function hedgeRun(x0,z0,x1,z1, h){
-  const len = Math.hypot(x1-x0, z1-z0), steps = Math.max(2, Math.round(len/1.95));
+  const len = Math.hypot(x1-x0, z1-z0), steps = Math.max(2, Math.round(len/2.25));
   for(let i=0;i<steps;i++){
     const t = (i+0.5)/steps, x = x0+(x1-x0)*t, z = z0+(z1-z0)*t;
     const b = mesh(G.ico, M.hedge, x, h*0.5 + rr(-.08,.08), z);
@@ -677,14 +738,14 @@ mesh(G.cone, hillMat, 0, 24, 0, spireG).scale.set(9, 14, 9);
 function flowerBed(cx, cz, w, d){
   const soil = box(w, .22, d, new THREE.MeshStandardMaterial({color:0x5c4634, roughness:1}), cx, .11, cz);
   soil.receiveShadow = true;
-  const cols = [0xd96a7a, 0xe8c45a, 0xf0f0e4, 0xb389c4, 0xe09050];
+  const cols = [0xc85f72, 0xd8b457, 0xe8e6d6, 0xa37cb4, 0xcf8352, 0xdd9aa8];
   const fmats = cols.map(c => new THREE.MeshStandardMaterial({ color:c, roughness:.85 }));
   for(let i=0;i<Math.min(46, Math.round(w*d*9));i++){
     const x = cx + rr(-w/2+.15, w/2-.15), z = cz + rr(-d/2+.15, d/2-.15);
-    const bush = mesh(G.ico, rnd()<.5 ? M.leafB : M.leafA, x, .26, z);
-    bush.scale.set(rr(.3,.46), rr(.26,.4), rr(.3,.46)); bush.rotation.y = rnd()*3;
+    const bush = mesh(G.ico, rnd()<.5 ? M.leafB : M.leafA, x, .24, z);
+    bush.scale.set(rr(.26,.4), rr(.24,.36), rr(.26,.4)); bush.rotation.y = rnd()*3;
     const f = mesh(G.sphere, fmats[(rnd()*fmats.length)|0], x+rr(-.08,.08), rr(.4,.56), z+rr(-.08,.08));
-    f.scale.setScalar(rr(.045,.085));
+    f.scale.setScalar(rr(.032,.06));
   }
   addCollider(cx-w/2, cx+w/2, cz-d/2, cz+d/2);
 }
@@ -712,8 +773,15 @@ function picnic(x,z,rot){
   for(const sz of [-.78,.78]){ shadeOn(box(2.2,.07,.3, M.wood, 0,.46,sz,g), true, true);
     for(const sx of [-.9,.9]) box(.08,.46,.08, M.wood, sx,.23,sz,g); }
   addCollider(x-1.2,x+1.2,z-1.1,z+1.1);
+  const LINES = ['You sit. Somewhere behind you, a mixer starts up.',
+                 'Tea would be the thing now.',
+                 'Wood warm from the sun. A wood pigeon, going on about it.'];
+  let i = 0;
+  PROPS.push({ x:x + Math.sin(rot)*1.75, z:z + Math.cos(rot)*1.75, r:1.3,
+    label:'the picnic bench', found:false, verb(){ return 'Sit at'; },
+    act(){ return LINES[(i++) % LINES.length]; } });
 }
-picnic(-7.5, 4, 0.35); picnic(W+7, 30, -0.5); picnic(-9, 30, 0.9);
+picnic(-7.5, 4, 0.35); picnic(W+7, 30, -0.5); picnic(-9.5, 28.5, 0.9);
 
 // deck chairs, stripes and all
 function deckchair(x,z,rot){
@@ -727,8 +795,11 @@ function deckchair(x,z,rot){
     const b = box(.05,.9,.05,  M.wood, sx,.42,.28,g);  b.rotation.x = -.5;
   }
   addCollider(x-.5,x+.5,z-.6,z+.6);
+  PROPS.push({ x:x + Math.sin(rot)*1.35, z:z + Math.cos(rot)*1.35, r:1.1,
+    label:'the deck chair', found:false, verb(){ return 'Drop into'; },
+    act(){ return 'The stripes have gone soft in the sun. You could stay a while.'; } });
 }
-deckchair(-4.2, 9.5, 0.6); deckchair(-5.6, 11.4, 0.3); deckchair(W+4.6, 12, -0.7);
+deckchair(-2.6, 9.2, 0.6); deckchair(-3.5, 11.6, 0.35); deckchair(W+2.8, 12, -0.7);
 
 // ---- birds ----------------------------------------------------------
 const birds = [];
@@ -770,6 +841,56 @@ function strut(a,b,r,mat,parent){
 
 const tent = new THREE.Group(); world.add(tent);
 
+// A flat quad reads as a wall. Real canvas is pulled over a frame and sags
+// between the bays, so build these as subdivided sheets with a sag profile:
+// one dip per bay across u, tapering to nothing at the fixed edges.
+function clothQuad(a,b,c,d, nu,nv, bays, amp, dir, mat, su,sv,v0, parent, freeEdge){
+  const pos=[], uv=[], idx=[], P=new THREE.Vector3();
+  for(let j=0;j<=nv;j++){
+    const v=j/nv;
+    for(let i=0;i<=nu;i++){
+      const u=i/nu;
+      const x0=a.x+(b.x-a.x)*u, y0=a.y+(b.y-a.y)*u, z0=a.z+(b.z-a.z)*u;
+      const x1=d.x+(c.x-d.x)*u, y1=d.y+(c.y-d.y)*u, z1=d.z+(c.z-d.z)*u;
+      P.set(x0+(x1-x0)*v, y0+(y1-y0)*v, z0+(z1-z0)*v);
+      const bu=u*bays, f=Math.sin(Math.PI*(bu-Math.floor(bu)));
+      // pinned at both edges, unless the far edge hangs free (a tablecloth)
+      P.addScaledVector(dir, amp*f*(freeEdge ? Math.sin(Math.PI*v/2) : Math.sin(Math.PI*v)));
+      pos.push(P.x,P.y,P.z); uv.push(u*su, (v0||0)+v*sv);
+    }
+  }
+  for(let j=0;j<nv;j++) for(let i=0;i<nu;i++){
+    const k=j*(nu+1)+i;
+    idx.push(k,k+1,k+nu+2, k,k+nu+2,k+nu+1);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  const m=new THREE.Mesh(geo, mat); (parent||world).add(m); return m;
+}
+
+// the frilled skirt that hangs off every marquee eave
+function valance(x0,z0,x1,z1, y, depth, mat){
+  const run=Math.hypot(x1-x0,z1-z0), n=Math.max(6, Math.round(run/0.75));
+  const seg=6, pos=[], uv=[], idx=[];
+  for(let i=0;i<=n*seg;i++){
+    const u=i/(n*seg), t=(u*n)%1;
+    const x=x0+(x1-x0)*u, z=z0+(z1-z0)*u;
+    const dip=depth*(0.22+0.78*Math.sin(Math.PI*t));
+    pos.push(x,y,z, x,y-dip,z);
+    uv.push(u*run/2.4, 0.98,  u*run/2.4, 0.84);
+  }
+  for(let i=0;i<n*seg;i++){
+    const k=i*2; idx.push(k,k+1,k+3, k,k+3,k+2);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  const m=new THREE.Mesh(geo, mat); tent.add(m); return m;
+}
+
 // ---- floor ----------------------------------------------------------
 const floor = mesh(G.plane, M.floor, W/2, 0.02, L/2);
 floor.rotation.x = -Math.PI/2; floor.scale.set(W, L, 1); floor.receiveShadow = true;
@@ -782,9 +903,12 @@ for(const [x,z,w,d] of [[W/2,-0.06,W+0.3,0.3],[W/2,L+0.06,W+0.3,0.3],
 // ---- walls: canvas below, clear window band above --------------------
 const WIN0 = 1.15, WIN1 = 2.85;         // window band
 function sideWall(x, flip){
-  quad(v3(x,0,0), v3(x,0,L), v3(x,WIN0,L), v3(x,WIN0,0), M.canvas, 9, .7);       // skirt
+  const out = v3(-flip, 0, 0);                       // bulge away from the inside
+  clothQuad(v3(x,0,0), v3(x,0,L), v3(x,WIN0,L), v3(x,WIN0,0),
+            36,3, 9, .045, out, M.canvas, 15,.42,0, tent);             // skirt
   quad(v3(x,WIN0,0), v3(x,WIN0,L), v3(x,WIN1,L), v3(x,WIN1,0), M.clear, 1, 1);   // glazing
-  quad(v3(x,WIN1,0), v3(x,WIN1,L), v3(x,EAVE,L), v3(x,EAVE,0), M.canvas, 9, .25);// pelmet
+  clothQuad(v3(x,WIN1,0), v3(x,WIN1,L), v3(x,EAVE,L), v3(x,EAVE,0),
+            36,2, 9, .03, out, M.canvas, 15,.14,.80, tent);            // pelmet
   for(let z=0; z<=L; z+=3){                                                      // mullions
     box(.07,WIN1-WIN0+.1,.07, M.frame, x, (WIN0+WIN1)/2, z, tent);
   }
@@ -795,19 +919,25 @@ sideWall(0,1); sideWall(W,-1);
 
 // front wall, with the entrance gap and two windows
 function frontPanel(x0,x1){
-  quad(v3(x0,0,0), v3(x1,0,0), v3(x1,WIN0,0), v3(x0,WIN0,0), M.canvas, 3,.6);
+  const n = Math.max(4, Math.round((x1-x0)*2));
+  clothQuad(v3(x0,0,0), v3(x1,0,0), v3(x1,WIN0,0), v3(x0,WIN0,0),
+            n,3, Math.max(2,Math.round((x1-x0)/4)), .035, v3(0,0,-1), M.canvas, (x1-x0)/2.4,.42,0, tent);
   quad(v3(x0,WIN0,0), v3(x1,WIN0,0), v3(x1,WIN1,0), v3(x0,WIN1,0), M.clear, 1,1);
-  quad(v3(x0,WIN1,0), v3(x1,WIN1,0), v3(x1,EAVE,0), v3(x0,EAVE,0), M.canvas, 3,.3);
+  clothQuad(v3(x0,WIN1,0), v3(x1,WIN1,0), v3(x1,EAVE,0), v3(x0,EAVE,0),
+            n,2, Math.max(2,Math.round((x1-x0)/4)), .025, v3(0,0,-1), M.canvas, (x1-x0)/2.4,.14,.80, tent);
 }
 frontPanel(0, DX0); frontPanel(DX1, W);
 // rear wall
-quad(v3(W,0,L), v3(0,0,L), v3(0,EAVE,L), v3(W,EAVE,L), M.canvas, 9, 1.4);
+clothQuad(v3(W,0,L), v3(0,0,L), v3(0,EAVE,L), v3(W,EAVE,L),
+          18,4, 5, .05, v3(0,0,1), M.canvas, 7.5,.95,0, tent);
 
 // ---- roof: two translucent slopes + gable triangles ------------------
 const RX = W/2;
 const shell = new THREE.Group(); world.add(shell);   // hidden in the plan views
-shell.add(quad(v3(0,EAVE,0), v3(0,EAVE,L), v3(RX,RIDGE,L), v3(RX,RIDGE,0), M.roof, 10, 3));
-shell.add(quad(v3(RX,RIDGE,0), v3(RX,RIDGE,L), v3(W,EAVE,L), v3(W,EAVE,0), M.roof, 10, 3));
+clothQuad(v3(0,EAVE,0), v3(0,EAVE,L), v3(RX,RIDGE,L), v3(RX,RIDGE,0),
+          36,5, 9, .11, v3(0,-1,0), M.roof, 15,.80,.10, shell);
+clothQuad(v3(RX,RIDGE,0), v3(RX,RIDGE,L), v3(W,EAVE,L), v3(W,EAVE,0),
+          36,5, 9, .11, v3(0,-1,0), M.roof, 15,.80,.10, shell);
 function gable(z){
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
@@ -817,6 +947,11 @@ function gable(z){
   shell.add(new THREE.Mesh(g, M.roof));
 }
 gable(0); gable(L);
+// scalloped valances along both eaves and across the gable ends
+valance(-0.09, 0.1, -0.09, L-0.1, EAVE+.02, .34, M.canvas);
+valance(W+0.09, 0.1, W+0.09, L-0.1, EAVE+.02, .34, M.canvas);
+valance(0.1, -0.09, W-0.1, -0.09, EAVE+.02, .30, M.canvas);
+valance(W-0.1, L+0.09, 0.1, L+0.09, EAVE+.02, .30, M.canvas);
 
 // ---- frame: trusses, ridge, purlins, guys ----------------------------
 const ridgeBeam = box(.16, .16, L+.3, M.frame, RX, RIDGE, L/2, tent);
@@ -849,9 +984,6 @@ addCollider(DX1, W+0.4, -0.25, 0.25);
 /* ------------------------------------------------------------------ */
 /* 8 · Doors, props and other things that move                         */
 /* ------------------------------------------------------------------ */
-const DOORS = [];   // { g, axis, open, t, target, speed }
-const AUTO  = [];   // doors that open on approach
-const PROPS = [];   // { pos, r, label, act }
 function addDoor(g, axis, openAngle, speed){
   const d = { g, axis, open:openAngle, t:0, target:0, speed:speed||3.0 };
   DOORS.push(d); return d;
@@ -1186,71 +1318,136 @@ function makeMixer(x,y,z,p,hex){
   MIXERS.push(rec); return rec;
 }
 const OVEN_RECESS = [];
-function makeOven(p, ox, oz, facing){
-  // facing = -1 → door on the -z face
-  const g = new THREE.Group(); g.position.set(ox, 0.22, oz); p.add(g);
-  const steel = M.steel;
-  const panel = box(.76,.54,.05, steel, 0, .27, 0, g); shadeOn(panel,true,false);
-  const ovenGlass = new THREE.MeshStandardMaterial({ color:0x3b464e, roughness:.16, metalness:.55 });
-  const glass = box(.56,.3,.025, ovenGlass, 0, .28, facing*.035, g);
-  for(const sy of [.1,.46]) box(.72,.03,.045, M.chrome, 0, sy, facing*.03, g);
-  const handle = mesh(G.cyl, M.chrome, 0, .52, facing*.07, g);
-  handle.scale.set(.032,.68,.032); handle.rotation.z = Math.PI/2;
-  for(const s of [-1,1]) box(.03,.06,.08, M.chrome, s*.28,.52,facing*.045,g);
-  g.rotation.x = 0;
+// oven module geometry, shared by the cabinetry and the door
+const OVW = .88, OVH = .60, OVY = .16, OVD = .54, OVT = .04;
+
+function ovenCavity(g, ox, zFront, idx){
+  // five enamel faces with the front left open — this is what the door reveals
+  const en = new THREE.MeshStandardMaterial({ color:0x15181a, roughness:.38, metalness:.1,
+    emissive:0xff7a1e, emissiveIntensity:0 });
+  en.userData.noEnv = true;                      // the inside of an oven reflects no sky
+  const iw = OVW - OVT*2, ih = OVH - OVT*2;
+  const cz = zFront + OVD/2, back = zFront + OVD;
+  box(OVW, OVT, OVD, en, ox, OVY + OVT/2,      cz, g);          // floor
+  box(OVW, OVT, OVD, en, ox, OVY + OVH - OVT/2, cz, g);         // roof
+  box(OVT, ih,  OVD, en, ox - iw/2 - OVT/2, OVY + OVH/2, cz, g);// sides
+  box(OVT, ih,  OVD, en, ox + iw/2 + OVT/2, OVY + OVH/2, cz, g);
+  box(OVW, OVH, OVT, en, ox, OVY + OVH/2, back - OVT/2, g);     // back
+  // the elements, which are what actually glow
+  const el = new THREE.MeshStandardMaterial({ color:0x50443a, roughness:.5,
+    emissive:0xff6a14, emissiveIntensity:0 });
+  for(const ey of [OVY + OVH - OVT - .035, OVY + OVT + .035]){
+    const bar = mesh(G.cyl, el, ox, ey, cz, g);
+    bar.scale.set(.02, OVD - .09, .02); bar.rotation.x = Math.PI/2;
+  }
+  // wire racks
+  const rackY = [OVY + .20];
+  for(const ry of rackY){
+    for(let i=0;i<5;i++) box(iw-.04, .01, .01, M.chrome, ox, ry, zFront+.08+i*(OVD-.15)/4, g);
+    for(const sx of [-1,1]) box(.012,.012, OVD-.09, M.chrome, ox+sx*(iw/2-.03), ry, cz, g);
+  }
+  for(const sx of [-1,1])                        // runners for the shelf above
+    box(.016,.016, OVD-.1, M.steel, ox+sx*(iw/2-.02), OVY+.42, cz, g);
+  // a tray with something on it, mid-shelf
+  box(iw-.1, .012, OVD-.18, M.steel, ox, rackY[0]+.012, cz, g);
+  pBake(ox, rackY[0]+.02, cz, g, idx%6, .62);
+  return { enamel:en, element:el };
+}
+
+function makeOvenDoor(p, ox, zFront, idx){
+  // hinged along its bottom edge, so it drops open like a real oven door
+  const g = new THREE.Group(); g.position.set(ox, OVY - .012, zFront - .022); p.add(g);
+  const shell = new THREE.MeshStandardMaterial({ color:0x4a5258, roughness:.42, metalness:.35 });
+  const hh = OVH/2 + .01;
+  shadeOn(box(OVW+.04, OVH+.02, .05, shell, 0, hh, 0, g), true, false);
+  // outer glass
+  box(OVW-.2, OVH-.22, .022, new THREE.MeshStandardMaterial({
+      color:0x2b3238, roughness:.14, metalness:.5 }), 0, hh, -.033, g);
+  // the inner liner — this is the face you see once the door is down
+  box(OVW-.04, OVH-.04, .02, new THREE.MeshStandardMaterial({
+      color:0xb4b9b9, roughness:.4, metalness:.35 }), 0, hh, .032, g);
+  box(OVW-.16, OVH-.16, .018, new THREE.MeshStandardMaterial({
+      color:0x30373c, roughness:.12, metalness:.45 }), 0, hh, .041, g);
+  // handle rail and hinges
+  const handle = mesh(G.cyl, M.chrome, 0, OVH - .04, -.085, g);
+  handle.scale.set(.03, OVW-.1, .03); handle.rotation.z = Math.PI/2;
+  for(const sx of [-1,1]){
+    box(.03,.055,.08, M.chrome, sx*(OVW/2-.09), OVH-.04, -.055, g);
+    box(.07,.05,.05, shell, sx*(OVW/2-.06), .01, .02, g);          // hinge knuckles
+  }
   return g;
 }
 function buildBench(cx, cz, hex, idx){
   const g = new THREE.Group(); g.position.set(cx, 0, cz); world.add(g);
   const name = BAKERS[idx];
 
-  // ---- cabinetry: painted shaker panels, baked into the texture ----
-  const wide = new THREE.MeshStandardMaterial({ map:texPanel(hex,3), roughness:.55 });
+  // ---- cabinetry ----------------------------------------------------
+  // built as blocks around the oven opening rather than one solid box, so
+  // the door actually has something to open onto
+  const wide   = new THREE.MeshStandardMaterial({ map:texPanel(hex,2), roughness:.55 });
   const narrow = new THREE.MeshStandardMaterial({ map:texPanel(hex,1), roughness:.55 });
-  const plain = new THREE.MeshStandardMaterial({ color:hex, roughness:.6 });
-  const base = new THREE.Mesh(G.unit, [narrow,narrow,plain,plain,wide,wide]);
-  base.scale.set(IW, IH, ID); base.position.set(0, IH/2, 0);
-  shadeOn(base, true, true); g.add(base);
+  const plain  = new THREE.MeshStandardMaterial({ color:hex, roughness:.6 });
+  const cab = (w,h,d, x,y,z, front) => {
+    const m = new THREE.Mesh(G.unit, [narrow,narrow,plain,plain,front,front]);
+    m.scale.set(w,h,d); m.position.set(x,y,z);
+    shadeOn(m, true, true); g.add(m); return m;
+  };
+  const ovenX = -0.25, zF = -ID/2;
+  const oL = ovenX - OVW/2, oR = ovenX + OVW/2;                  // opening edges
+  cab(oL + IW/2, IH, ID, (-IW/2 + oL)/2, IH/2, 0, narrow);        // left of the oven
+  cab(IW/2 - oR, IH, ID, (oR + IW/2)/2, IH/2, 0, wide);           // right of it
+  cab(OVW, OVY, ID, ovenX, OVY/2, 0, plain);                      // under it
+  cab(OVW, IH-(OVY+OVH), ID, ovenX, (OVY+OVH+IH)/2, 0, plain);    // over it
+  cab(OVW, OVH, ID-OVD, ovenX, OVY+OVH/2, (zF+OVD+ID/2)/2, plain);// behind it
   box(IW+.02,.07,ID+.02, plain, 0,.035,0,g);                      // plinth
   // worktop
   const top = box(IW+.14,.08,ID+.12, M.wood, 0, IH+.04, 0, g);
   shadeOn(top, true, true);
   box(IW+.15,.02,ID+.13, new THREE.MeshStandardMaterial({color:0xb07c42, roughness:.7}), 0, IH-.005, 0, g);
 
-  // ---- oven, hinged at the bottom ----
-  const ovenX = -0.25;
-  const oven = makeOven(g, ovenX, -ID/2 - .03, -1);
-  const recess = box(.74,.52,.34, M.ovenlit.clone(), ovenX, .5, -ID/2+.22, g);
-  recess.material.emissiveIntensity = 0;
-  box(.66,.02,.3, M.chrome, ovenX,.44,-ID/2+.22, g);              // shelf
-  pBake(ovenX, .46, -ID/2+.22, g, idx%6, .7);
-  const door = addDoor(oven, 'x', -1.42, 2.6);
-  PROPS.push({ x:cx+ovenX, z:cz-ID/2-.45, r:1.3, label:name+"'s oven", found:false,
+  // ---- the oven itself ----
+  const cavity = ovenCavity(g, ovenX, zF, idx);
+  const ovenDoor = makeOvenDoor(g, ovenX, zF, idx);
+  const door = addDoor(ovenDoor, 'x', -1.46, 2.2);
+  PROPS.push({ x:cx+ovenX, z:cz-ID/2-.55, r:1.35, label:name+"'s oven", found:false,
     verb(){ return door.target ? 'Close' : 'Open'; },
     act(){ door.target = door.target ? 0 : 1;
-           recess.material.emissiveIntensity = door.target ? .5 : 0;
-           return door.target ? 'The oven breathes out. Something in there is rising.'
-                              : 'Door shut. No peeking.'; } });
+           const on = !!door.target;
+           cavity.enamel.emissiveIntensity  = on ? .085 : 0;
+           cavity.element.emissiveIntensity = on ? 1.1 : 0;
+           return on ? 'The oven breathes out. Something in there is rising.'
+                     : 'Door shut. No peeking.'; } });
 
   // ---- sink ----
   const sx = -IW/2 + .62;
   box(.56,.03,.46, M.steel, sx, IH+.082, .04, g);
-  const basin = box(.46,.14,.36, M.steel, sx, IH+.01, .04, g);
+  const basin = box(.46,.14,.36, M.steel, sx, IH-.005, .04, g);
   box(.42,.01,.32, M.glass, sx, IH+.055, .04, g);
-  const tap = mesh(G.cyl, M.chrome, sx, IH+.21, -.3, g); tap.scale.set(.034,.26,.034);
-  const spout = mesh(G.cyl, M.chrome, sx, IH+.33, -.22, g); spout.scale.set(.028,.19,.028);
-  spout.rotation.x = Math.PI/2.2;
-  for(const s of [-1,1]) { const h = mesh(G.cyl, M.chrome, sx+s*.12, IH+.14, -.3, g); h.scale.set(.02,.09,.02); }
+  const tap = mesh(G.cyl, M.chrome, sx, IH+.21, .3, g); tap.scale.set(.034,.26,.034);
+  const spout = mesh(G.cyl, M.chrome, sx, IH+.33, .22, g); spout.scale.set(.028,.19,.028);
+  spout.rotation.x = -Math.PI/2.2;
+  for(const s of [-1,1]) { const h = mesh(G.cyl, M.chrome, sx+s*.12, IH+.14, .3, g); h.scale.set(.02,.09,.02); }
+  const waterMat = new THREE.MeshStandardMaterial({ color:0xcfe8f2, roughness:.06,
+    transparent:true, opacity:.5, emissive:0x9fd0e4, emissiveIntensity:.18 });
+  const water  = mesh(G.cyl, waterMat, sx, IH+.09, .14, g);
+  water.scale.set(.026,.36,.026); water.visible = false;
+  const splash = mesh(G.cyl, waterMat, sx, IH-.08, .14, g);
+  splash.scale.set(.17,.012,.17); splash.visible = false;
 
   // ---- hob ----
   const hx2 = .35;
   box(.58,.025,.5, M.glass, hx2, IH+.085, .02, g);
+  const ringMat = new THREE.MeshStandardMaterial({ color:0x3a4146, roughness:.4,
+    emissive:0xff3a10, emissiveIntensity:0 });
   for(let i=0;i<4;i++){
-    const r = mesh(G.cyl, new THREE.MeshStandardMaterial({color:0x3a4146, roughness:.4}),
-      hx2 + (i%2?.13:-.13), IH+.099, .02 + ((i/2)|0 ? .11 : -.11), g);
+    const r = mesh(G.cyl, ringMat, hx2 + (i%2?.13:-.13), IH+.099,
+                   .02 + ((i/2)|0 ? .11 : -.11), g);
     r.scale.set(.19,.004,.19);
   }
   box(.5,.012,.05, M.dark, hx2, IH+.093, .21, g);
+  const pan = mesh(G.cyl, M.steel, hx2-.13, IH+.16, -.09, g);   // a pan on the front ring
+  pan.scale.set(.26,.12,.26); shadeOn(pan, true, false);
+  const panH = box(.22,.028,.028, M.dark, hx2-.33, IH+.19, -.09, g);
 
   // ---- the stand mixer, the hero prop ----
   makeMixer(IW/2-.55, IH+.085, -.2, g, pick([0x8fc9c2,0xdcafb8,0xa7bed6,0xb3c49f,0xe8d9a8,0xc8485c]));
@@ -1276,17 +1473,32 @@ function buildBench(cx, cz, hex, idx){
   pJar(IW/2-.85, y, .35, g, .2);
   pJar(IW/2-.68, y, .2, g, .15);
 
-  // tea towel over the front rail
-  const tw = mesh(G.plane, towelMats[idx%3], -IW/2+1.9, IH-.2, -ID/2-.025, g);
-  tw.scale.set(.3,.42,1); tw.rotation.z = rr(-.1,.1);
-  // and one on the oven handle
-  const tw2 = mesh(G.plane, towelMats[(idx+1)%3], ovenX+.3, .66, -ID/2-.09, g);
-  tw2.scale.set(.2,.3,1);
+  // tea towels, hung clear of the oven door
+  const tw = mesh(G.plane, towelMats[idx%3], IW/2-.42, IH-.22, -ID/2-.025, g);
+  tw.scale.set(.3,.42,1); tw.rotation.z = rr(-.08,.08);
+  const tw2 = mesh(G.plane, towelMats[(idx+1)%3], IW/2+.08, IH-.26, .18, g);
+  tw2.scale.set(.26,.36,1); tw2.rotation.y = Math.PI/2;
 
   // name card, propped on the corner
   const card = box(.36,.2,.015, new THREE.MeshStandardMaterial({ map:texCard(name, idx+1), roughness:.8 }),
     IW/2-.25, IH+.19, .5, g);
   card.rotation.x = -.18; card.rotation.y = rr(-.2,.2);
+
+  // the tap and the hob are worked from behind the bench, where the baker
+  // stands — which also keeps them clear of the oven and mixer out front
+  const backZ = cz + ID/2 + .58;
+  PROPS.push({ x:cx+sx, z:backZ, r:.95, label:'the tap', found:false,
+    verb(){ return water.visible ? 'Turn off' : 'Turn on'; },
+    act(){ water.visible = !water.visible; splash.visible = water.visible;
+           return water.visible ? 'Cold water, drumming on the steel.'
+                                : 'Tap off. ' + name + ' will want that sink.'; } });
+  const hob = { on:false };
+  PROPS.push({ x:cx+hx2, z:backZ, r:.95, label:'the hob', found:false,
+    verb(){ return hob.on ? 'Turn off' : 'Turn on'; },
+    act(){ hob.on = !hob.on;
+           ringMat.emissiveIntensity = hob.on ? .75 : 0;
+           return hob.on ? 'Two rings glow. Something is about to be caramelised.'
+                         : 'Rings off, pan still warm.'; } });
 
   colliderFor({position:{x:cx,z:cz}}, IW+.2, ID+.2);
   return g;
@@ -1303,38 +1515,85 @@ ROWZ.forEach((z,i)=>{
 function buildFridge(x, z, face, hex, idx){
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = face; world.add(g);
   const body = new THREE.MeshStandardMaterial({ color:hex, roughness:.33, metalness:.12 });
-  const FW = .76, FH = 1.78, FD = .72;
-  shadeOn(box(FW, FH-.12, FD, body, 0, (FH-.12)/2+.08, 0, g), true, true);
-  box(FW-.05,.09,FD-.05, body, 0, FH-.055, 0, g);                 // shoulder
-  box(FW-.16,.06,FD-.16, body, 0, FH+.005, 0, g);
-  for(const s of [-1,1]) box(.07,.1,.07, M.chrome, s*(FW/2-.12), .04, FD/2-.12, g);  // feet
-  // lit interior
-  const inner = new THREE.MeshStandardMaterial({ color:0xeef3f3, roughness:.8,
-    emissive:0xdfe9ec, emissiveIntensity:0 });
-  box(FW-.1, FH-.34, FD-.1, inner, 0, (FH-.2)/2+.06, .04, g);
-  for(let i=0;i<3;i++){
-    box(FW-.14,.02,FD-.16, M.chrome, 0, .42+i*.42, .04, g);
-    pBowl(rr(-.16,.16), .46+i*.42, .02, g, rr(.08,.12));
-    if(i<2) pJar(rr(-.2,.2), .44+i*.42, -.1, g, .14);
-  }
-  // door on a vertical hinge
-  const door = new THREE.Group(); door.position.set(0, 0, -FD/2+.02); g.add(door);
-  const leaf = box(FW+.02, FH-.2, .07, body, 0, (FH-.1)/2+.06, FD-.04, door);
-  shadeOn(leaf, true, false);
-  const handle = mesh(G.cyl, M.chrome, FW/2-.12, 1.0, FD+.02, door);
-  handle.scale.set(.035,.46,.035);
-  box(.05,.06,.1, M.chrome, FW/2-.12, 1.22, FD-.01, door);
-  box(.05,.06,.1, M.chrome, FW/2-.12, .78, FD-.01, door);
-  box(FW-.04,.035,.02, M.chrome, 0, 1.42, FD-.015, door);        // trim
-  box(.16,.08,.02, M.chrome, -.14, .5, FD-.015, door);           // badge
-  const d = addDoor(door, 'y', 1.95, 2.4);
+  const FW = .78, FH = 1.80, FD = .74, FT = .055;
+  const y0 = .17, y1 = FH - .13;                       // cavity top and bottom
+  const cy = (y0 + y1)/2, ch = y1 - y0;
+
+  // ---- carcass: five slabs, open at the front, so the door reveals a box ----
+  shadeOn(box(FW, y0, FD, body, 0, y0/2, 0, g), true, true);                    // base
+  shadeOn(box(FW, FH-y1, FD, body, 0, (y1+FH)/2, 0, g), true, true);            // top
+  shadeOn(box(FW, ch, FT, body, 0, cy, -FD/2 + FT/2, g), true, false);          // back
+  for(const sx of [-1,1])
+    shadeOn(box(FT, ch, FD, body, sx*(FW/2 - FT/2), cy, 0, g), true, false);    // sides
+  box(FW-.14,.05,FD-.14, body, 0, FH+.02, 0, g);                                // shoulder
+  for(const sx of [-1,1]) box(.07,.1,.07, M.chrome, sx*(FW/2-.12), .05, FD/2-.12, g);
+
+  // ---- lining: one box drawn from the inside, so all five faces are white ----
+  const liner = new THREE.MeshStandardMaterial({ color:0xeef3f4, roughness:.55,
+    side:THREE.BackSide, emissive:0xdfeef2, emissiveIntensity:0 });
+  box(FW-FT*2-.006, ch-.012, FD-FT-.014, liner, 0, cy, FT/2+.007, g);
+  const strip = box(FW-FT*2-.06,.02,.1, new THREE.MeshStandardMaterial({
+    color:0xf6fbfc, emissive:0xfdffff, emissiveIntensity:0, roughness:.4 }),
+    0, y1-.035, -FD/2+.16, g);
+
+  // ---- shelves and what is on them ----
+  const glassShelf = new THREE.MeshStandardMaterial({ color:0xdfeef2, roughness:.12,
+    metalness:.05, transparent:true, opacity:.45 });
   const nm = BAKERS[idx % BAKERS.length];
-  // the aisle-side point the player will stand at
-  const ax = x + Math.sin(face)*0 + (face===0 ? 1.0 : -1.0);
-  PROPS.push({ x:ax, z:z, r:1.7, label:'the cold store', found:false,
+  for(let i=0;i<3;i++){
+    const sy = y0 + .18 + i*.42;
+    box(FW-FT*2-.02, .018, FD-FT-.05, glassShelf, 0, sy, .02, g);
+    pBowl(rr(-.14,.14), sy+.05, rr(-.08,.1), g, rr(.09,.13), i);
+    pJar(rr(-.2,.18), sy+.012, rr(-.12,.06), g, rr(.12,.18));
+    if(i===1) pBake(.06, sy+.02, .02, g, idx%6, .42);
+    if(i===2){                                        // a tray of eggs
+      box(.26,.05,.17, M.white, -.16, sy+.04, .04, g);
+      for(let e=0;e<4;e++){
+        const eg = mesh(G.sphere, new THREE.MeshStandardMaterial({color:0xe6d3ad, roughness:.8}),
+          -.24+e*.055, sy+.08, .04, g);
+        eg.scale.set(.045,.058,.045);
+      }
+    }
+  }
+  box(FW-FT*2-.06,.1,.3, new THREE.MeshStandardMaterial({ color:0xdce9ec, roughness:.2,
+    transparent:true, opacity:.5 }), 0, y0+.06, .08, g);        // salad drawer
+
+  // ---- the door, with a lining and bottle bins of its own ----
+  // hinge on the wall-side edge; the leaf lives in a child group so its parts
+  // can still be positioned relative to the middle of the door
+  const door = new THREE.Group(); door.position.set(-FW/2, 0, FD/2 - .03); g.add(door);
+  const leaf = new THREE.Group(); leaf.position.set(FW/2, 0, 0); door.add(leaf);
+  const leafZ = .055;
+  shadeOn(box(FW+.02, FH-.06, .07, body, 0, (FH-.06)/2+.03, leafZ, leaf), true, false);
+  box(FW-.08, FH-.2, .02, new THREE.MeshStandardMaterial({ color:0xf1f5f6, roughness:.5 }),
+      0, FH/2, leafZ-.046, leaf);                                // inner lining
+  for(const by of [.55, 1.05]){                                  // door bins
+    box(FW-.14,.015,.1, M.white, 0, by, leafZ-.09, leaf);
+    box(FW-.14,.14,.015, new THREE.MeshStandardMaterial({ color:0xeaf1f3, roughness:.3,
+      transparent:true, opacity:.6 }), 0, by+.07, leafZ-.135, leaf);
+    for(let b=0;b<3;b++){
+      const bt = mesh(G.cyl, new THREE.MeshStandardMaterial({
+        color:pick([0xd8e4e8,0xe8dcc0,0xcfd9c4]), roughness:.3 }),
+        -.2+b*.2, by+.09, leafZ-.11, leaf);
+      bt.scale.set(.09,.18,.09);
+    }
+  }
+  // handle and trim, all standing proud of the leaf so nothing z-fights
+  const hz = leafZ + .075;
+  const handle = mesh(G.cyl, M.chrome, FW/2-.13, 1.04, hz, leaf);
+  handle.scale.set(.035,.5,.035);
+  for(const hy of [1.27,.81]) box(.05,.06,.1, M.chrome, FW/2-.13, hy, hz-.04, leaf);
+  box(FW-.06,.035,.03, M.chrome, 0, 1.45, leafZ+.05, leaf);      // chrome trim
+  box(.18,.07,.025, M.chrome, -.15, .52, leafZ+.048, leaf);      // badge
+  box(FW+.03,.04,.05, body, 0, FH-.05, leafZ, leaf);             // cap rail
+
+  const d = addDoor(door, 'y', -1.38, 2.2);   // swings out and away from the wall
+  const ax = x + (face === 0 ? 1.05 : -1.05);
+  PROPS.push({ x:ax, z:z, r:1.6, label:'the cold store', found:false,
     verb(){ return d.target ? 'Close' : 'Open'; },
     act(){ d.target = d.target ? 0 : 1;
-           inner.emissiveIntensity = d.target ? .55 : 0;
+           liner.emissiveIntensity = d.target ? .45 : 0;
+           strip.material.emissiveIntensity = d.target ? .9 : 0;
            return d.target ? 'Cold air, and ' + nm + "'s mousse setting on the middle shelf."
                            : 'Shut — it needs to stay cold.'; } });
   addCollider(x-.5, x+.5, z-.45, z+.45);
@@ -1400,6 +1659,12 @@ const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rea
   makeMixer(-2.9, 1.09, -.6, rear, 0xe8d9a8);
   const chalk = box(1.5,.78,.06, M.chalk, 2.95, 1.5, -.1, rear);
   chalk.rotation.y = -.12;
+  let chN = 0;
+  PROPS.push({ x:W/2+2.95, z:L-1.95, r:1.3, label:'the challenge board', found:false,
+    verb(){ return 'Read'; },
+    act(){ chN++; drawChalk(chN);
+           const c = CHALLENGES[chN % CHALLENGES.length];
+           return 'This round: the ' + c[0].toLowerCase() + ' bake. ' + c[2] + ' on the clock.'; } });
   addCollider(W/2-3.9, W/2+3.9, L-1.6, L-0.3);
   addCollider(W/2-6.6, W/2+6.6, L-0.75, L-0.35);
 }
@@ -1411,17 +1676,27 @@ function shelfUnit(x, z, wdt){
   for(let i=0;i<5;i++){
     const y = .42 + i*.48;
     shadeOn(box(wdt,.05,.5, M.wood, 0, y, 0, g), true, true);
-    const n = Math.floor(wdt/0.42);
+    const n = Math.floor(wdt/0.56);
     for(let k=0;k<n;k++){
       const px = -wdt/2 + .26 + k*.42, r = rnd();
       if(r < .4) pJar(px, y+.03, rr(-.08,.08), g, rr(.16,.26));
-      else if(r < .68) pBowl(px, y+.1, 0, g, rr(.1,.16));
+      else if(r < .72) pBowl(px, y+.1, 0, g, rr(.1,.16));
       else if(r < .84) pTubs(px, y+.03, 0, g, 2);
       else { const tin = mesh(G.cyl, M.chrome, px, y+.09, 0, g); tin.scale.set(.2,.14,.2); }
     }
   }
   shadeOn(box(wdt+.16,.1,.56, frame, 0, 2.5, 0, g), true, false);
   addCollider(x-wdt/2-.1, x+wdt/2+.1, z-.3, z+.3);
+  const STORES = [
+    'Strong white, plain, self-raising, rye. Four kinds of sugar.',
+    'Vanilla pods, cardamom, mace, and a jar of candied peel.',
+    'Six sorts of chocolate, and the good cocoa on the top shelf.',
+    'Glacé cherries, ground almonds, and more butter than seems wise.'
+  ];
+  let si = 0;
+  PROPS.push({ x:x, z:z-1.25, r:1.5, label:'the pantry', found:false,
+    verb(){ return 'Look over'; },
+    act(){ return STORES[(si++) % STORES.length]; } });
   // a hanging rail of copper pans under the top shelf
   strut(v3(x-wdt/2+.2, 2.36, z-.34), v3(x+wdt/2-.2, 2.36, z-.34), .02, M.chrome, world);
   const n = Math.max(2, Math.floor(wdt/0.55));
@@ -1460,13 +1735,17 @@ let bellRing = 0, bellG = null;
     roughness:.96, side:THREE.DoubleSide });
   for(const sx of [-2.0,2.0]) for(const sz of [-.5,.5]) box(.11,.9,.11, M.wood, sx,.45,sz,g);
   shadeOn(box(4.6,.09,1.4, M.wood, 0,.88,0,g), true, true);
-  shadeOn(box(4.74,.05,1.54, cloth, 0,.935,0,g), true, true);          // the draped top
-  for(const sz of [-.77,.77]){                                          // long sides
-    const sk = mesh(G.plane, cloth, 0,.6,sz,g); sk.scale.set(4.74,.68,1);
+  shadeOn(box(4.70,.05,1.50, cloth, 0,.935,0,g), true, true);          // the draped top
+  // the skirt hangs in soft folds rather than as four flat boards
+  for(const sz of [-.772,.772]){
+    const o = Math.sign(sz);
+    clothQuad(v3(-2.37,.94,sz), v3(2.37,.94,sz), v3(2.37,.26,sz), v3(-2.37,.26,sz),
+              26,3, 9, .035, v3(0,0,o), cloth, 3.2,.5,.2, g, true);
   }
-  for(const sx of [-2.37,2.37]){                                        // ends
-    const sk = mesh(G.plane, cloth, sx,.6,0,g);
-    sk.scale.set(1.54,.68,1); sk.rotation.y = Math.PI/2;
+  for(const sx of [-2.372,2.372]){
+    const o = Math.sign(sx);
+    clothQuad(v3(sx,.94,-.77), v3(sx,.94,.77), v3(sx,.26,.77), v3(sx,.26,-.77),
+              10,3, 3, .03, v3(o,0,0), cloth, 1.1,.5,.2, g, true);
   }
   // three bakes under cloches, waiting to be judged
   const kinds = [0,3,5];
@@ -1513,12 +1792,14 @@ let bellRing = 0, bellG = null;
 scene.traverse(o=>{
   if(!o.material) return;
   const list = Array.isArray(o.material) ? o.material : [o.material];
-  for(const m of list) if(m.isMeshStandardMaterial) m.envMapIntensity = 0.32;
+  for(const m of list)
+    if(m.isMeshStandardMaterial) m.envMapIntensity = m.userData.noEnv ? 0 : 0.32;
 });
 
 /* ------------------------------------------------------------------ */
 /* 15b · The crew side of it: cameras, crates, cable                   */
 /* ------------------------------------------------------------------ */
+const CAMERAS = [];
 function cameraRig(x, z, face){
   const g = new THREE.Group(); g.position.set(x,0,z); g.rotation.y = face; world.add(g);
   const dk = new THREE.MeshStandardMaterial({ color:0x2a3034, roughness:.6, metalness:.25 });
@@ -1531,20 +1812,31 @@ function cameraRig(x, z, face){
     strut(v3(0, APEX*.42, 0), v3(foot.x*.62, APEX*.2, foot.z*.62), .016, dk, g);  // spreader
   }
   box(.08,.3,.08, dk, 0, APEX+.13, 0, g);                 // column
-  const pan = box(.26,.07,.3, dk, 0, APEX+.3, 0, g);      // pan/tilt head
-  const head = box(.3,.26,.6, dk, 0, APEX+.47, .02, g); shadeOn(head, true, false);
-  box(.17,.16,.2, dk, -.02, APEX+.66, .14, g);            // viewfinder
-  const lens = mesh(G.cyl, dk, 0, APEX+.47, -.4, g);
+  const hd = new THREE.Group(); g.add(hd);                // everything that pans
+  box(.26,.07,.3, dk, 0, APEX+.3, 0, hd);
+  shadeOn(box(.3,.26,.6, dk, 0, APEX+.47, .02, hd), true, false);
+  box(.17,.16,.2, dk, -.02, APEX+.66, .14, hd);           // viewfinder
+  const lens = mesh(G.cyl, dk, 0, APEX+.47, -.4, hd);
   lens.scale.set(.19,.34,.19); lens.rotation.x = Math.PI/2;
-  const hood = mesh(G.cyl, dk, 0, APEX+.47, -.56, g);
+  const hood = mesh(G.cyl, dk, 0, APEX+.47, -.56, hd);
   hood.scale.set(.23,.06,.23); hood.rotation.x = Math.PI/2;
-  const front = mesh(G.cyl, M.glass, 0, APEX+.47, -.585, g);
+  const front = mesh(G.cyl, M.glass, 0, APEX+.47, -.585, hd);
   front.scale.set(.16,.03,.16); front.rotation.x = Math.PI/2;
-  const tally = mesh(G.sphere, new THREE.MeshStandardMaterial({ color:0xd0252f,
-    emissive:0xff2a2a, emissiveIntensity:.7, roughness:.4 }), .09, APEX+.62, -.18, g);
-  tally.scale.setScalar(.05);
-  const grip = box(.05,.05,.42, dk, .13, APEX+.25, .28, g); grip.rotation.x = .35;
+  const tallyMat = new THREE.MeshStandardMaterial({ color:0x6b1a1e,
+    emissive:0xff2a2a, emissiveIntensity:0, roughness:.4 });
+  const tally = mesh(G.sphere, tallyMat, .09, APEX+.62, -.18, hd);
+  tally.scale.setScalar(.055);
+  const grip = box(.05,.05,.42, dk, .13, APEX+.25, .28, hd); grip.rotation.x = .35;
   addCollider(x-.45, x+.45, z-.45, z+.45);
+
+  const rec = { head:hd, base:face, x, z, on:false };
+  CAMERAS.push(rec);
+  PROPS.push({ x:x + Math.sin(face+Math.PI)*1.3, z:z + Math.cos(face+Math.PI)*1.3,
+    r:1.2, label:'the camera', found:false,
+    verb(){ return rec.on ? 'Cut' : 'Go live'; },
+    act(){ rec.on = !rec.on; tallyMat.emissiveIntensity = rec.on ? .9 : 0;
+           return rec.on ? 'The tally light blinks red. It is following you now.'
+                         : 'Cut. The lens drifts back to the benches.'; } });
 }
 cameraRig(8.0, 12.2, 1.9); cameraRig(10.0, 24.6, -1.9); cameraRig(8.2, 31.5, 2.9);
 
@@ -1556,7 +1848,7 @@ function crateStack(x, z, n){
     box(.64,.04,.46, new THREE.MeshStandardMaterial({color:0xb07c42, roughness:.8}),
         c.position.x, .36+i*.36, c.position.z, g);
   }
-  for(let i=0;i<3;i++) pBowl(rr(-.2,.2), .4+(n-1)*.36, rr(-.15,.15), g, .13);
+  for(let i=0;i<2;i++) pBowl(rr(-.2,.2), .4+(n-1)*.36, rr(-.15,.15), g, .13);
   addCollider(x-.4, x+.4, z-.3, z+.3);
 }
 crateStack(1.9, 20.5, 2); crateStack(W-1.9, 16.4, 3); crateStack(2.1, 28.8, 1);
@@ -1594,8 +1886,9 @@ crateStack(1.9, 20.5, 2); crateStack(W-1.9, 16.4, 3); crateStack(2.1, 28.8, 1);
 /* ------------------------------------------------------------------ */
 const player = {
   pos: new THREE.Vector3(W/2, 0, -9.5),
+  prev: new THREE.Vector3(W/2, 0, -9.5),     // last fixed step, for interpolation
   yaw: Math.PI, pitch: -0.02,
-  radius: 0.32, eye: 1.6, bob: 0, step: 0
+  radius: 0.32, eye: 1.6, bob: 0, prevBob: 0, bobAmt: 0, step: 0
 };
 // a marker so you can find yourself in the floor-plan views
 const marker = new THREE.Group(); world.add(marker); marker.visible = false;
@@ -1617,6 +1910,20 @@ function blocked(x, z){
     if(x > c.minX-r && x < c.maxX+r && z > c.minZ-r && z < c.maxZ+r) return true;
   }
   return false;
+}
+
+// An interaction point has to be somewhere a person can actually stand.
+// Now that every collider exists, nudge any that ended up inside something.
+for(const p of PROPS){
+  if(!blocked(p.x, p.z)) continue;
+  let moved = false;
+  for(let rad = 0.25; rad <= 1.8 && !moved; rad += 0.25){
+    for(let a = 0; a < 24; a++){
+      const t = a/24*6.283;
+      const x = p.x + Math.cos(t)*rad, z = p.z + Math.sin(t)*rad;
+      if(!blocked(x, z)){ p.x = x; p.z = z; moved = true; break; }
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1736,21 +2043,25 @@ function fixedUpdate(dt){
   let r = (keys['d']||keys['arrowright']?1:0) - (keys['a']||keys['arrowleft']?1:0) + touchMove.r;
   f = Math.max(-1, Math.min(1, f)); r = Math.max(-1, Math.min(1, r));
 
+  player.prev.copy(player.pos); player.prevBob = player.bob;
+
   const fwd = v3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
   const rgt = v3(-fwd.z, 0, fwd.x);
   let dx = fwd.x*f + rgt.x*r, dz = fwd.z*f + rgt.z*r;
   const len = Math.hypot(dx, dz);
-  if(len > 0.0001){
-    const spd = (keys['shift'] ? 4.6 : 2.45) * dt;
+  const moving = len > 0.0001;
+  if(moving){
+    const spd = (keys['shift'] ? 3.9 : 2.1) * dt;
     dx = dx/len*spd; dz = dz/len*spd;
     // resolve the axes separately so you slide along the benches
     if(!blocked(player.pos.x + dx, player.pos.z)) player.pos.x += dx;
     if(!blocked(player.pos.x, player.pos.z + dz)) player.pos.z += dz;
-    player.step += spd * 3.2;
-  } else {
-    player.step += dt * 0.6;                       // settle the bob when stopped
+    // ~0.9 cycles per metre, so the cadence reads as a walk rather than a jog
+    player.step += spd * 1.9;
   }
-  player.bob = Math.sin(player.step*3.1) * 0.025 * (len > 0.0001 ? 1 : 0.12);
+  // ease the bob in and out instead of snapping it on with the first keypress
+  player.bobAmt += ((moving ? 1 : 0) - player.bobAmt) * Math.min(1, dt*6);
+  player.bob = Math.sin(player.step*3.1) * 0.016 * player.bobAmt;
 
   // what am I standing next to?
   nearest = null; let best = 1e9;
@@ -1796,6 +2107,14 @@ function animate(dt){
       m.dough.rotation.y += dt*2.2;
       m.dough.position.y = 0.06 + Math.abs(Math.sin(m.spin*1.4))*0.004;
     }
+  }
+  // a live camera keeps you in frame
+  for(const c of CAMERAS){
+    const want = c.on ? Math.atan2(-(player.pos.x - c.x), -(player.pos.z - c.z)) - c.base : 0;
+    let d = want - c.head.rotation.y;
+    while(d >  Math.PI) d -= Math.PI*2;
+    while(d < -Math.PI) d += Math.PI*2;
+    c.head.rotation.y += d * Math.min(1, dt*2.2);
   }
   // bunting breathing in the draught from the door
   for(let i=0;i<BUNT.length;i++){
@@ -1851,14 +2170,19 @@ function animate(dt){
 /* ------------------------------------------------------------------ */
 /* 21 · Camera placement & the loop                                    */
 /* ------------------------------------------------------------------ */
+let acc = 0, last = 0;
 function placeCameras(){
-  camera.position.set(player.pos.x, player.eye + player.bob, player.pos.z);
+  // the sim runs at a fixed 60 Hz; interpolate towards the next step so a
+  // 120 Hz display doesn't show the same frame twice and stutter
+  const a = Math.max(0, Math.min(1, acc/(1/60)));
+  const px = player.prev.x + (player.pos.x - player.prev.x)*a;
+  const pz = player.prev.z + (player.pos.z - player.prev.z)*a;
+  const pb = player.prevBob + (player.bob - player.prevBob)*a;
+  const ey = player.eye + pb;
+  camera.position.set(px, ey, pz);
   const cp = Math.cos(player.pitch);
-  camera.lookAt(
-    player.pos.x - Math.sin(player.yaw)*cp,
-    player.eye + player.bob + Math.sin(player.pitch),
-    player.pos.z - Math.cos(player.yaw)*cp
-  );
+  camera.lookAt(px - Math.sin(player.yaw)*cp, ey + Math.sin(player.pitch),
+                pz - Math.cos(player.yaw)*cp);
   if(view === 'map'){
     // entrance at the bottom of the screen, like a real floor plan
     ortho.position.set(W/2, 80, L/2);
@@ -1866,8 +2190,8 @@ function placeCameras(){
     ortho.lookAt(W/2, 0, L/2);
   } else if(view === 'iso'){
     ortho.up.set(0,1,0);
-    ortho.position.set(player.pos.x + 13, 13, player.pos.z - 13);
-    ortho.lookAt(player.pos.x, 1.0, player.pos.z);
+    ortho.position.set(px + 13, 13, pz - 13);
+    ortho.lookAt(px, 1.0, pz);
   }
 }
 
@@ -1878,7 +2202,7 @@ addEventListener('resize', ()=>{
   sizeOrtho();
 });
 
-let acc = 0, last = performance.now()/1000;
+last = performance.now()/1000;
 function frame(){
   requestAnimationFrame(frame);
   const now = performance.now()/1000;

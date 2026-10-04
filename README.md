@@ -40,17 +40,26 @@ On a touch screen: one finger looks, the on-screen pad walks, `USE` interacts.
 
 ## What's in there
 
-Forty things respond to `Space`, and the counter in the corner tracks how many
-you've found:
+Seventy-six things respond to `Space`, and the counter in the corner tracks
+how many you've found:
 
-- **12 ovens** under the benches — the doors drop open and the inside lights up
-  on whatever is proving in there.
+- **12 ovens** under the benches — the door drops open onto a real cavity:
+  enamel walls, a wire shelf, the elements coming up to heat, and whatever is
+  baking on the tray.
+- **12 fridges** down the side walls — edge-hinged doors onto lit interiors
+  with glass shelves, door bins and somebody's mousse setting.
 - **12 stand mixers** — start one and the beater turns in the bowl.
-- **12 fridges** against the side walls — they light up when opened.
-- **3 cloches** on the judging table — lift one to see what's underneath.
-- **1 bell** — ring it for the line you're expecting.
+- **12 taps** — run the water; it drums on the steel.
+- **12 hobs** — bring the rings up to a glow.
+- **3 cameras** — go live and the head pans to keep you in frame, tally light
+  and all.
+- **3 cloches** on the judging table, **1 bell**, **1 challenge board** that
+  rewrites itself each time you read it, **2 pantries**, **3 picnic benches**
+  and **3 deck chairs** out on the grass.
 
-The entrance flaps open by themselves as you approach, and close behind you.
+Ovens, taps and hobs are worked from behind the bench where the baker stands;
+the oven and mixer answer from the front. The entrance flaps open by themselves
+as you approach, and close behind you.
 
 ## Inside a tent, on a lawn
 
@@ -66,9 +75,17 @@ location rather than a backdrop:
 - Clouds drift, trees sway, birds circle, dust turns over in the shafts of
   afternoon sun leaning in through the sunny wall.
 
-Every texture — timber, canvas weave, grass, gravel, painted shaker panels,
-the chalkboard, bunting, tea towels, the name cards — is painted into a
-`<canvas>` at boot. There are no image files anywhere.
+The marquee skin is built as cloth rather than as flat planes. The canvas is
+painted as a single welded panel — seam, stitching, slack creases, cloudy
+translucency and grime gathering at the foot — and tiled so the seams land
+every couple of metres, with the same artwork driving a bump map for relief.
+The sheets are then subdivided and sagged between the bays, so the roof dips
+slightly between every truss and the walls bow out between the posts, and a
+scalloped valance hangs off all four eaves.
+
+Every texture — timber, canvas, grass, gravel, painted shaker panels, the
+chalkboard, bunting, tea towels, the name cards — is painted into a `<canvas>`
+at boot. There are no image files anywhere.
 
 ## How it's built
 
@@ -82,15 +99,24 @@ One file, one IIFE, following the house engine style guide:
   alt views. The roof, the lighting rig and the dust hide in those views, and
   the canvas walls drop to near-transparent, so they read as a dolls' house.
 - **Player** — a vertical cylinder sliding along the floor at fixed height. No
-  jump, no gravity. Head bob is `sin(step*3.1)*0.025`.
+  jump, no gravity. Head bob is `sin(step*3.1)*0.016`, paced at about 1.97 Hz
+  at a 2.1 m/s walk and eased in and out rather than snapped on.
 - **Fixed timestep** — physics at 60 Hz behind an accumulator with a 6-step
-  guard; animation uses raw delta since it needn't be deterministic.
+  guard; animation uses raw delta since it needn't be deterministic. The camera
+  interpolates between the last two fixed steps, so a display running faster
+  than 60 Hz doesn't judder.
 - **Collision** — axis-aligned boxes in a flat array, resolved separately on X
   and Z so you slide along the benches instead of stopping dead. Linear search
   beats any spatial structure at this scale (~75 boxes).
 - **Environment** — a small PMREM environment is baked from a procedural
   sky-over-grass scene, purely so metal has something to reflect. Its
   contribution is held at `envMapIntensity = 0.32`: it is a sheen, not a light.
+  Materials that should see no sky at all (the inside of an oven) opt out.
+- **Depth** — near plane at 0.12 over a 620 m world. The obvious 0.04 gives a
+  17500:1 ratio and the depth buffer visibly fights on distant coplanar
+  surfaces.
+- **Interaction points** are nudged out of solid geometry after the world is
+  built, so every one of the 76 is somewhere a person can actually stand.
 
 `window.TENT` exposes the player, the camera, the prop registry and
 `blocked()` for poking at it from the console.
