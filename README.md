@@ -58,8 +58,9 @@ how many you've found:
   rewrites itself each time you read it, **2 pantries**, **3 picnic benches**
   and **3 deck chairs** out on the grass.
 
-Ovens, taps and hobs are worked from behind the bench where the baker stands;
-the oven and mixer answer from the front. The entrance flaps open by themselves
+There is also **Noel**, who wanders the tent and the lawn on a fixed round and
+will stop for a word. Ovens, taps and hobs are worked from behind the bench
+where the baker stands; the oven and mixer answer from the front. The entrance flaps open by themselves
 as you approach, and close behind you.
 
 ## Inside a tent, on a lawn
@@ -100,6 +101,49 @@ tin, and some bakers leave flour all over the worktop.
 Every texture — timber, canvas, grass, gravel, painted shaker panels, brick,
 slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
 `<canvas>` at boot. There are no image files anywhere.
+
+## Cosiness
+
+Festoon lights sag along both eaves and across each end, with three low warm
+point lights under them and a standard lamp in the corner. There is a tea nook
+by the entrance — two armchairs, a throw over one arm, a low table with an urn,
+mugs and a teapot, a crate of books — faded kilim rugs down the middle and in
+the corners, hurricane lanterns on the floor, bunches of dried flowers tied to
+the frame, and more pots of greenery along the walls.
+
+## The walker
+
+Noel is a procedurally animated character, not a canned animation:
+
+- **Rig** — a joint hierarchy (pelvis → torso → neck → head, shoulder → elbow →
+  hand, hip → knee → ankle → foot) built from boxes, so every limb rotates
+  about a real joint.
+- **Gait** — driven by sinusoids off a single phase. Thighs swing ±0.42 rad;
+  knees only ever bend one way, hard through the swing and barely at all
+  through stance; ankles counter-rotate; arms swing against their own leg with
+  the elbow tightening on the forward reach. The body rides on top: a vertical
+  bob at twice stride frequency, lateral sway and pelvis roll at once per
+  stride, and a counter-rotating torso.
+- **No foot skating** — the phase advances with *distance actually walked*
+  (`phase += moved / 1.38m × 2π`), not with time, so when he slows down, turns
+  or is blocked, the feet stay planted.
+- **Navigation** — waypoints around the tent and out onto the grass, steered by
+  whiskers that fan out from the desired heading and take the first one with
+  clear ground. Movement resolves per axis, so he slides along furniture rather
+  than stopping dead, and a stuck timer moves him on if he ever goes nowhere.
+- **People** — the player counts as an obstacle in his whisker test, so he
+  routes *around* someone standing in his way rather than waiting for them. He
+  pauses briefly if you get right in front of him, but the pause is bounded and
+  on a cooldown so it can never deadlock. The player can't walk through him
+  either.
+- **Clothes** — the ikat is painted at boot: concentric medallions, then every
+  weft row offset sideways to give the feathered edge that makes ikat read as
+  ikat. Because a box face always gets uv 0..1, each garment panel takes its own
+  repeat, sized so one medallion is about 6cm of cloth wherever it lands.
+
+Verified by driving the navigation at a fixed 60Hz for ten simulated minutes:
+roughly 600m walked, **zero frames with any part of him inside geometry**, and
+a longest stall of half a second even with the player parked in his path.
 
 ## How it's built
 

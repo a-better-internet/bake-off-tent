@@ -649,7 +649,7 @@ scene.add(sun); scene.add(sun.target);
 scene.add(new THREE.HemisphereLight(0xcfe6f6, 0x6f7f52, 0.50));
 scene.add(new THREE.AmbientLight(0xe8f0f4, 0.13));
 // the canvas overhead re-radiates: a soft warm bounce down the middle
-const bounce = new THREE.PointLight(0xfff0d8, 0.32, 30, 2);
+const bounce = new THREE.PointLight(0xffeccf, 0.40, 30, 2);
 bounce.position.set(W/2, 4.6, L/2); scene.add(bounce);
 
 // Metal with nothing to reflect renders black, so bake a tiny image-based
@@ -2119,6 +2119,190 @@ crateStack(1.9, 20.5, 2); crateStack(W-1.9, 16.4, 3); crateStack(2.1, 28.8, 1);
 
 
 /* ------------------------------------------------------------------ */
+/* 15c · Making it cosy: festoons, rugs, lamps, a tea nook             */
+/* ------------------------------------------------------------------ */
+const BULBS = [];
+const bulbMat = new THREE.MeshStandardMaterial({ color:0xfff1cc, emissive:0xffd79a,
+  emissiveIntensity:1.25, roughness:.35 });
+const cableMat = new THREE.LineBasicMaterial({ color:0x2b2621 });
+
+// festoon lights: the single biggest change in how warm the place feels
+function festoon(x0,z0,x1,z1, y, sag, n){
+  const pts = [];
+  for(let i=0;i<=n;i++){
+    const t=i/n, u=(t*4)%1;
+    pts.push(v3(x0+(x1-x0)*t, y - sag*Math.sin(Math.PI*u), z0+(z1-z0)*t));
+  }
+  world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), cableMat));
+  for(let i=1;i<n;i++){
+    const p = pts[i];
+    const b = mesh(G.sphere, bulbMat, p.x, p.y-.085, p.z);
+    b.scale.setScalar(.085);
+    b.userData.ph = rnd()*6.28;
+    BULBS.push(b);
+  }
+}
+festoon(0.55, 1.5, 0.55, L-1.5, EAVE-0.55, .34, 21);
+festoon(W-0.55, 1.5, W-0.55, L-1.5, EAVE-0.55, .34, 21);
+festoon(1.2, 1.0, W-1.2, 1.0, EAVE-0.5, .30, 11);
+festoon(1.2, L-1.2, W-1.2, L-1.2, EAVE-0.5, .30, 11);
+// and a warm pool of real light under them, kept low
+for(const [lx,lz] of [[W/2,8],[W/2,19],[W/2,30]]){
+  const pl = new THREE.PointLight(0xffdca8, 0.34, 17, 2);
+  pl.position.set(lx, EAVE-0.7, lz); scene.add(pl);
+}
+
+// a woven runner down the middle, and rugs in the corners
+function texRug(a,b,c){
+  // an old rug, walked on for years: low contrast, sun-faded, worn through
+  const cv = cvs(256,256), g = cv.getContext('2d');
+  g.fillStyle=a; g.fillRect(0,0,256,256);
+  for(let y=0;y<256;y+=22){
+    g.fillStyle=b; g.globalAlpha=.5; g.fillRect(0,y,256,4);
+    g.fillStyle=c; g.globalAlpha=.4; g.fillRect(0,y+8,256,2);
+  }
+  g.globalAlpha=.45;
+  for(let i=0;i<48;i++){
+    const x=(i%8)*32+16, y=((i/8)|0)*43+22;
+    g.fillStyle = i%2?c:b; g.beginPath();
+    g.moveTo(x,y-7); g.lineTo(x+9,y); g.lineTo(x,y+7); g.lineTo(x-9,y);
+    g.closePath(); g.fill();
+  }
+  g.globalAlpha=1;
+  for(let i=0;i<60;i++){                                  // sun-bleached patches
+    const x=rnd()*256,y=rnd()*256,r=rr(18,60);
+    const gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'rgba(236,228,210,'+rr(.08,.2)+')');
+    gr.addColorStop(1,'rgba(236,228,210,0)');
+    g.fillStyle=gr; g.beginPath(); g.arc(x,y,r,0,6.3); g.fill();
+  }
+  for(let i=0;i<2000;i++){                                // pile
+    g.fillStyle='rgba(0,0,0,'+rr(.01,.05)+')';
+    g.fillRect(rnd()*256, rnd()*256, rr(1,4), rr(1,2));
+  }
+  return finish(cv,1,1);
+}
+function rug(cx, cz, w, d, rot, tex){
+  const m = mesh(G.plane, new THREE.MeshStandardMaterial({ map:tex, roughness:.98 }),
+                 cx, 0.028, cz);
+  m.rotation.x = -Math.PI/2; m.rotation.z = rot || 0;
+  m.scale.set(w, d, 1); m.receiveShadow = true;
+  return m;
+}
+const rugA = texRug('#a89079','#e0d5c0','#8d9490');
+const rugB = texRug('#9a8478','#e4dac6','#86928c');
+rugA.repeat.set(2,11); rugB.repeat.set(2,2);
+const rugMatA = new THREE.MeshStandardMaterial({ map:rugA, color:0xd9cfc0, roughness:.98 });
+rug(W/2, 15.5, 2.1, 11, 0, rugA).material = rugMatA;
+rug(W/2, 28.0, 2.1, 9, 0, rugA).material = rugMatA;
+rug(3.6, 4.6, 3.0, 2.8, 0.12, rugB);
+rug(W-3.6, 4.6, 2.8, 2.6, -0.1, rugB);
+
+// --- the tea nook, tucked in beside the entrance ---------------------
+function armchair(x,z,rot,hex){
+  const g = new THREE.Group(); g.position.set(x,0,z); g.rotation.y=rot; world.add(g);
+  const up = new THREE.MeshStandardMaterial({ color:hex, roughness:.95 });
+  shadeOn(box(.78,.36,.74, up, 0,.30,0,g), true, true);          // seat block
+  shadeOn(box(.78,.62,.17, up, 0,.62,-.3,g), true, false);       // back
+  for(const sx of [-1,1]) shadeOn(box(.14,.3,.74, up, sx*.32,.52,0,g), true, false);
+  for(const sx of [-1,1]) for(const sz of [-1,1])
+    box(.08,.14,.08, M.wood, sx*.3,.07,sz*.3,g);
+  const cush = box(.5,.16,.5, new THREE.MeshStandardMaterial({
+    color:pick([0xe8d9a8,0xdcafb8,0xa7bed6,0xb3c49f]), roughness:.95 }), 0,.56,.04,g);
+  cush.rotation.x = -.18; shadeOn(cush,true,false);
+  addCollider(x-.5,x+.5,z-.5,z+.5);
+  return g;
+}
+(function teaNook(){
+  const NX = 3.6, NZ = 4.6;
+  armchair(NX-0.9, NZ-0.5, 0.55, 0x6f7f74);
+  armchair(NX+1.0, NZ-0.3, -0.75, 0x8a6a62);
+  // a throw over the arm of one
+  const throwM = new THREE.MeshStandardMaterial({ map:texTowel('#e9ddc2','#9d5f4a'),
+    roughness:.98, side:THREE.DoubleSide });
+  const th = mesh(G.plane, throwM, NX+1.3, .52, -.1+NZ, world);
+  th.rotation.set(-0.35, -0.75, 0); th.scale.set(.55,.8,1);
+  // low table with the tea things
+  const t = new THREE.Group(); t.position.set(NX, 0, NZ+0.95); world.add(t);
+  shadeOn(box(1.0,.07,.68, M.wood, 0,.44,0,t), true, true);
+  for(const sx of [-1,1]) for(const sz of [-1,1]) box(.07,.44,.07, M.wood, sx*.42,.22,sz*.26,t);
+  const urn = mesh(G.cyl, M.chrome, -.3,.61,0,t); urn.scale.set(.26,.3,.26);
+  mesh(G.cyl, M.chrome, -.3,.78,0,t).scale.set(.2,.05,.2);
+  box(.05,.05,.1, M.dark, -.3,.56,.14,t);                        // tap
+  for(let i=0;i<5;i++){                                          // mugs
+    const m = mesh(G.cyl, bowlMats[i%bowlMats.length], .04+(i%3)*.17, .52, -.18+((i/3)|0)*.22, t);
+    m.scale.set(.14,.1,.14);
+    const h = mesh(G.torus, bowlMats[i%bowlMats.length], .04+(i%3)*.17+.08, .52, -.18+((i/3)|0)*.22, t);
+    h.scale.set(.11,.11,.05); h.rotation.y = Math.PI/2;
+  }
+  pStand(.3,.48,.16,t,4);
+  const pot = mesh(G.sphere, bowlMats[2], .3,.56,-.2,t); pot.scale.set(.2,.15,.2);
+  box(.12,.03,.03, bowlMats[2], .44,.57,-.2,t);
+  addCollider(NX-.6, NX+.6, NZ+.6, NZ+1.3);
+  // a standard lamp with a warm shade
+  const lp = new THREE.Group(); lp.position.set(NX-1.75, 0, NZ+0.5); world.add(lp);
+  mesh(G.cyl, M.dark, 0,.03,0,lp).scale.set(.34,.06,.34);
+  box(.05,1.45,.05, M.dark, 0,.73,0,lp);
+  const shade = mesh(new THREE.CylinderGeometry(.26,.34,.34,14,1,true),
+    new THREE.MeshStandardMaterial({ color:0xf0dcb4, emissive:0xffcf8a,
+      emissiveIntensity:.55, roughness:.9, side:THREE.DoubleSide }), 0,1.6,0,lp);
+  const lampLight = new THREE.PointLight(0xffce92, 0.5, 7, 2);
+  lampLight.position.set(NX-1.75, 1.5, NZ+0.5); scene.add(lampLight);
+  addCollider(NX-1.95, NX-1.55, NZ+.3, NZ+.7);
+  // a crate of books beside the chair
+  const cr = new THREE.Group(); cr.position.set(NX+1.9, 0, NZ+0.9); world.add(cr);
+  shadeOn(box(.5,.42,.4, M.wood, 0,.21,0,cr), true, true);
+  for(let i=0;i<4;i++) box(.34,.055,.26, new THREE.MeshStandardMaterial({
+    color:pick([0x8a4a52,0x4a6a78,0x6b7a4a,0xcbb089]), roughness:.85 }),
+    rr(-.03,.03),.45+i*.058,rr(-.03,.03),cr);
+  addCollider(NX+1.65,NX+2.15,NZ+.65,NZ+1.15);
+})();
+
+// hurricane lanterns on the floor by the door
+for(const [lx,lz] of [[DX0-1.5,1.4],[DX1+1.5,1.4],[2.0,L-3.0],[W-2.0,L-3.0]]){
+  const g = new THREE.Group(); g.position.set(lx,0,lz); world.add(g);
+  mesh(G.cyl, M.dark, 0,.02,0,g).scale.set(.22,.04,.22);
+  const glass = mesh(G.cyl, new THREE.MeshStandardMaterial({ color:0xfff0cc,
+    emissive:0xffc87a, emissiveIntensity:.8, roughness:.3, transparent:true, opacity:.8 }),
+    0,.19,0,g);
+  glass.scale.set(.17,.28,.17);
+  mesh(G.cyl, M.dark, 0,.35,0,g).scale.set(.2,.05,.2);
+  const hoop = mesh(G.torus, M.dark, 0,.44,0,g); hoop.scale.set(.2,.2,.06);
+  addCollider(lx-.15,lx+.15,lz-.15,lz+.15);
+}
+
+// bunches of dried flowers tied to the frame
+for(const [bx,bz] of [[0.35,7],[0.35,21],[W-0.35,13],[W-0.35,27]]){
+  const g = new THREE.Group(); g.position.set(bx,2.55,bz); world.add(g);
+  g.rotation.z = (bx<1?-1:1)*0.25;
+  for(let i=0;i<6;i++){
+    const st = mesh(G.cyl, new THREE.MeshStandardMaterial({color:0x8d8a5e, roughness:1}),
+      rr(-.07,.07), -.18, rr(-.07,.07), g);
+    st.scale.set(.012,.36,.012); st.rotation.z = rr(-.2,.2); st.rotation.x = rr(-.2,.2);
+    const hd = mesh(G.ico, new THREE.MeshStandardMaterial({
+      color:pick([0xc9a2b4,0xb0a7c4,0xd8c08a,0xa8b48c]), roughness:.95 }),
+      st.position.x*1.4, -.36, st.position.z*1.4, g);
+    hd.scale.setScalar(rr(.07,.12));
+  }
+  box(.05,.05,.05, M.dark, 0,0,0,g);
+}
+
+// more greenery, in pots along the walls
+for(const [px,pz] of [[1.5,3.4],[W-1.5,3.4],[1.4,L-5.5],[W-1.4,L-5.5]]){
+  const g = new THREE.Group(); g.position.set(px,0,pz); world.add(g);
+  const pot = mesh(G.cyl, new THREE.MeshStandardMaterial({color:0xc08a62, roughness:.9}), 0,.19,0,g);
+  pot.scale.set(.46,.38,.46); shadeOn(pot,true,true);
+  mesh(G.cyl, new THREE.MeshStandardMaterial({color:0xb07a52, roughness:.9}), 0,.39,0,g)
+    .scale.set(.5,.05,.5);
+  for(let i=0;i<11;i++){
+    const l = mesh(G.plane, new THREE.MeshStandardMaterial({color:pick([0x5a8b43,0x4b7a3a,0x6d9a4e]),
+      roughness:.9, side:THREE.DoubleSide}), rr(-.18,.18), rr(.5,.95), rr(-.18,.18), g);
+    l.scale.set(.15, rr(.4,.7), 1); l.rotation.set(rr(-.5,.5), rnd()*3, rr(-.6,.6));
+  }
+  addCollider(px-.3,px+.3,pz-.3,pz+.3);
+}
+
+/* ------------------------------------------------------------------ */
 /* 16 · Player                                                         */
 /* ------------------------------------------------------------------ */
 const player = {
@@ -2140,12 +2324,20 @@ const marker = new THREE.Group(); world.add(marker); marker.visible = false;
   marker.traverse(o=>{ o.renderOrder = 999; });
 }
 
-function blocked(x, z){
-  const r = player.radius;
+// the world test, parameterised by radius so the walker can use it too
+function blockedAt(x, z, r){
   if(x < BMINX+r || x > BMAXX-r || z < BMINZ+r || z > BMAXZ-r) return true;
   for(const c of COL){
     if(x > c.minX-r && x < c.maxX+r && z > c.minZ-r && z < c.maxZ+r) return true;
   }
+  return false;
+}
+let NOEL = null;                       // the walker, built just below
+function blocked(x, z){
+  if(blockedAt(x, z, player.radius)) return true;
+  // you can't walk through him either
+  if(NOEL && Math.hypot(x - NOEL.pos.x, z - NOEL.pos.z) < NOEL.radius + player.radius - .06)
+    return true;
   return false;
 }
 
@@ -2161,6 +2353,325 @@ for(const p of PROPS){
       if(!blocked(x, z)){ p.x = x; p.z = z; moved = true; break; }
     }
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* 16b · A presenter, wandering about                                  */
+/* ------------------------------------------------------------------ */
+// ikat: concentric "eye" medallions with the feathered horizontal edge the
+// weave gives you, which is what makes the cloth read as ikat and not spots
+function texIkat(){
+  const S = 512, base = cvs(S,S), g = base.getContext('2d');
+  g.fillStyle = '#16151e'; g.fillRect(0,0,S,S);
+  const rings = [[.47,'#2a3566'],[.40,'#cfc3a4'],[.33,'#8d2230'],[.25,'#e3d9bd'],
+                 [.16,'#1e2b5c'],[.085,'#c2383a']];
+  const blob = (cx,cy,R,col) => {
+    g.fillStyle = col; g.beginPath();
+    for(let a=0;a<=40;a++){
+      const t = a/40*Math.PI*2;
+      const k = Math.sign(Math.cos(t))*Math.pow(Math.abs(Math.cos(t)), .72);
+      const m = Math.sign(Math.sin(t))*Math.pow(Math.abs(Math.sin(t)), .72);
+      const x = cx + k*R, y = cy + m*R*1.18;
+      a ? g.lineTo(x,y) : g.moveTo(x,y);
+    }
+    g.closePath(); g.fill();
+  };
+  const cols = 3, rows = 3, cw = S/cols, ch = S/rows;
+  for(let r=-1;r<=rows;r++) for(let c=-1;c<=cols;c++){
+    const cx = (c+.5)*cw + (((r%2)+2)%2 ? cw/2 : 0), cy = (r+.5)*ch;
+    for(const [rad,col] of rings) blob(cx, cy, rad*cw, col);
+    // small crosses in the gaps
+    g.fillStyle = '#b9ad8c';
+    g.fillRect(cx+cw/2-3, cy-18, 6, 36); g.fillRect(cx+cw/2-18, cy-3, 36, 6);
+  }
+  // feather each weft row sideways — the signature ikat blur
+  const out = cvs(S,S), o = out.getContext('2d');
+  for(let y=0;y<S;y++){
+    const j = Math.round(Math.sin(y*.55)*2.2 + Math.sin(y*2.1)*1.3 + rr(-2,2));
+    for(const dx of [-S,0,S]) o.drawImage(base, 0,y,S,1, j+dx, y, S,1);
+  }
+  o.globalAlpha = .18;                                   // weave
+  for(let y=0;y<S;y+=3){ o.fillStyle='#000'; o.fillRect(0,y,S,1); }
+  o.globalAlpha = 1;
+  return finish(out,1,1);
+}
+function texFace(){
+  const c = cvs(128,128), g = c.getContext('2d');
+  g.fillStyle = '#edc49c'; g.fillRect(0,0,128,128);
+  g.fillStyle = 'rgba(214,150,126,.35)';                  // cheeks
+  g.beginPath(); g.ellipse(30,74,13,9,0,0,6.3); g.fill();
+  g.beginPath(); g.ellipse(98,74,13,9,0,0,6.3); g.fill();
+  for(const ex of [40,88]){                               // heavily lined eyes
+    g.fillStyle = '#17131a';
+    g.beginPath(); g.ellipse(ex,56,17,12,0,0,6.3); g.fill();
+    g.fillStyle = '#f2f3f6';
+    g.beginPath(); g.ellipse(ex,57,12.5,8,0,0,6.3); g.fill();
+    g.fillStyle = '#2f6fa8';
+    g.beginPath(); g.arc(ex,57,7,0,6.3); g.fill();
+    g.fillStyle = '#12161c';
+    g.beginPath(); g.arc(ex,57,3.2,0,6.3); g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(ex-2.5,54.5,1.8,0,6.3); g.fill();
+    g.strokeStyle = '#17131a'; g.lineWidth = 4.5; g.lineCap='round';
+    g.beginPath(); g.moveTo(ex-18,40); g.quadraticCurveTo(ex,33,ex+17,41); g.stroke();
+  }
+  g.strokeStyle = '#8d4f4f'; g.lineWidth = 3; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(52,96); g.quadraticCurveTo(64,103,77,95); g.stroke();
+  g.strokeStyle = 'rgba(150,104,80,.5)'; g.lineWidth = 2.4;
+  g.beginPath(); g.moveTo(64,66); g.lineTo(61,82); g.stroke();
+  return finish(c,1,1);
+}
+
+function buildWalker(){
+  const ikatTex = texIkat();
+  // BoxGeometry gives every face uv 0..1, so a shared texture would stretch
+  // differently on every panel. Give each piece its own repeat instead, sized
+  // so one medallion is about 7cm of cloth wherever it lands.
+  const MOTIF = 0.058;
+  const ikatMat = (w,h) => {
+    const t = ikatTex.clone(); t.needsUpdate = true;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(Math.max(.7, w/(MOTIF*3)), Math.max(.7, h/(MOTIF*3)));
+    return new THREE.MeshStandardMaterial({ map:t, color:0xcfc8c0, roughness:.9 });
+  };
+  const skin = new THREE.MeshStandardMaterial({ color:0xedc49c, roughness:.76 });
+  const faceM = new THREE.MeshStandardMaterial({ map:texFace(), roughness:.76 });
+  const tee  = new THREE.MeshStandardMaterial({ color:0x15151a, roughness:.92 });
+  const hair = new THREE.MeshStandardMaterial({ color:0x17141c, roughness:.96, flatShading:true });
+  const boot = new THREE.MeshStandardMaterial({ color:0x121217, roughness:.7 });
+
+  const root  = new THREE.Group(); world.add(root);
+  const body  = new THREE.Group(); body.position.y = 1.015; root.add(body);
+  const torso = new THREE.Group(); body.add(torso);
+
+  // --- torso: black roll-neck, jacket hanging open over it ---
+  shadeOn(box(.38,.50,.23, tee, 0,.25,0, torso), true, false);
+  shadeOn(box(.33,.13,.22, tee, 0,.515,0, torso), true, false);          // roll neck
+  shadeOn(box(.44,.52,.075, ikatMat(.44,.52), 0,.25,-.125, torso), true, false);
+  for(const sx of [-1,1]){
+    const p = box(.19,.52,.07, ikatMat(.19,.52), sx*.115,.25,.112, torso);
+    p.rotation.y = -sx*.10; shadeOn(p,true,false);                       // open front
+    shadeOn(box(.07,.52,.225, ikatMat(.225,.52), sx*.20,.25,0, torso), true, false);
+    const lap = box(.06,.30,.05, ikatMat(.06,.30), sx*.055,.37,.145, torso);
+    lap.rotation.z = sx*.22; lap.rotation.y = -sx*.3;                    // lapel
+  }
+  shadeOn(box(.43,.06,.24, ikatMat(.43,.24), 0,.52,0, torso), true, false);  // shoulders
+
+  // --- head ---
+  const neck = new THREE.Group(); neck.position.y = .50; torso.add(neck);
+  box(.105,.09,.105, skin, 0,.045,0, neck);
+  const head = new THREE.Group(); head.position.y = .09; neck.add(head);
+  const skull = new THREE.Mesh(G.unit, [skin,skin,skin,skin,faceM,skin]);
+  skull.scale.set(.205,.255,.205); skull.position.y = .125;
+  shadeOn(skull,true,false); head.add(skull);
+
+  // shaggy layered hair: lots of small angular shards, not one helmet
+  const shard = (x,y,z, w,h,d, rx,ry,rz) => {
+    const m = box(w,h,d, hair, x,y,z, head);
+    m.rotation.set(rx,ry,rz); shadeOn(m,true,false); return m;
+  };
+  for(let i=0;i<9;i++){                                    // crown, spiking up
+    const a2 = (i/9)*Math.PI*2;
+    shard(Math.cos(a2)*.085, .255+rr(0,.05), Math.sin(a2)*.085 - .02,
+          .095, rr(.11,.19), .085, rr(-.35,.1), a2, Math.cos(a2)*.5);
+  }
+  for(let i=0;i<7;i++){                                    // fringe, kept off the eyes
+    const t = (i/6 - .5)*2;
+    shard(t*.105, .252 - Math.abs(t)*.018, .098,
+          .062, rr(.10,.15), .045, .26+rr(-.08,.08), t*.45, t*.55);
+  }
+  for(const sx of [-1,1]) for(let i=0;i<6;i++){            // falling at the sides
+    shard(sx*(.118+rr(0,.03)), .15-i*.05, -.07+i*.016,
+          .055, rr(.20,.30), .075, rr(-.15,.15), sx*rr(.1,.5), sx*(.10+i*.05));
+  }
+  for(let i=0;i<7;i++){                                    // down the back
+    shard(-.09+i*.03, .13-rr(0,.07), -.115,
+          .06, rr(.22,.32), .055, -.14+rr(-.1,.1), rr(-.4,.4), rr(-.25,.25));
+  }
+
+  // --- arms ---
+  function arm(side){
+    const sh = new THREE.Group(); sh.position.set(side*.232,.44,0); torso.add(sh);
+    shadeOn(box(.11,.30,.12, ikatMat(.12,.30), 0,-.15,0, sh), true, false);
+    const el = new THREE.Group(); el.position.y = -.30; sh.add(el);
+    shadeOn(box(.10,.27,.105, ikatMat(.11,.27), 0,-.135,0, el), true, false);
+    box(.085,.115,.08, skin, 0,-.315,.012, el);
+    return { sh, el };
+  }
+  const armL = arm(1), armR = arm(-1);
+
+  // --- legs ---
+  function leg(side){
+    const hip = new THREE.Group(); hip.position.set(side*.108,0,0); body.add(hip);
+    shadeOn(box(.175,.43,.185, ikatMat(.18,.43), 0,-.215,0, hip), true, false);
+    const kn = new THREE.Group(); kn.position.y = -.43; hip.add(kn);
+    shadeOn(box(.155,.43,.16, ikatMat(.16,.43), 0,-.215,0, kn), true, false);
+    const an = new THREE.Group(); an.position.y = -.43; kn.add(an);
+    shadeOn(box(.16,.125,.175, boot, 0,-.063,0, an), true, false);
+    shadeOn(box(.16,.09,.13, boot, 0,-.085,.115, an), true, false);
+    box(.17,.032,.3, boot, 0,-.122,.04, an);
+    return { hip, kn, an };
+  }
+  const legL = leg(1), legR = leg(-1);
+
+  return { root, body, torso, neck, head, armL, armR, legL, legR,
+           hipY: 1.015,
+           pos: new THREE.Vector3(9, 0, 13), yaw: Math.PI, radius: .34,
+           speed: 0, phase: 0, idle: 0, stuck: 0, wi: 0, pause: 0, pauseCool: 0,
+           last: new THREE.Vector3(9,0,13), stuckT: 0, greet: 0 };
+}
+
+NOEL = buildWalker();
+// a tour of the tent, out onto the grass, and back
+// A tour that sticks to the wide ground: the central corridor, the cross
+// aisles between the bench rows, the back of the tent and a turn on the
+// grass. The side aisles are barely 0.9m of clear floor, which is not a
+// sensible thing to ask a 0.68m-wide walker to thread.
+NOEL.route = [
+  [9,6.8],  [10,12],  [4.5,12],  [10,12],
+  [9,16],   [13.8,16],[9,16],
+  [9,20],   [4.5,20], [9,20],
+  [9,24],   [13.8,24],[9,24],
+  [9,28],   [9,32.2], [13.5,32.2], [4.8,32.2], [9,32.2],
+  [9,24],   [9,16],   [9,7.5],
+  [9,2.2],  [9,-4.5], [13.5,-7.5], [9,-4.5], [9,2.2]
+];
+
+const SAY = [
+  'Have you seen the state of my proving drawer?',
+  'I had a dream about a trifle the size of a caravan.',
+  "There's a man outside with a lens. Don't look directly at him.",
+  'Somebody has used my good piping nozzle as a trumpet.',
+  'I like this bench. It has an energy.',
+  "If anyone asks, the custard was always meant to be that colour.",
+  'Forty minutes left. That is both a long time and no time at all.'
+];
+let sayN = (rnd()*SAY.length)|0;
+const noelProp = { x:NOEL.pos.x, z:NOEL.pos.z, r:1.7, label:'Noel', found:false,
+  verb(){ return 'Say hello to'; },
+  act(){ NOEL.greet = 2.6; return SAY[(sayN++) % SAY.length]; } };
+PROPS.push(noelProp);
+
+function updateWalker(w, dt){
+  const tgt = w.route[w.wi];
+  const dx = tgt[0] - w.pos.x, dz = tgt[1] - w.pos.z;
+  const dist = Math.hypot(dx, dz);
+  if(dist < 0.85){ w.wi = (w.wi + 1) % w.route.length; }
+
+  // how close is the player, and are they in the way?
+  const pdx = w.pos.x - player.pos.x, pdz = w.pos.z - player.pos.z;
+  const pd = Math.hypot(pdx, pdz);
+  const facePlayer = (pd < 2.6) || w.greet > 0;
+
+  const want = Math.atan2(dx, dz);               // the model faces +z
+  const FAN = [0,.22,-.22,.45,-.45,.75,-.75,1.1,-1.1,1.6,-1.6,2.2,-2.2,Math.PI];
+  const probe = .62 + w.speed * .28;
+  // A heading is open only if the ground is clear AND it does not walk into
+  // the player — so he routes around someone standing in his way instead of
+  // waiting for them to move.
+  const gap = w.radius + player.radius + 0.12;
+  let open = null;
+  for(const off of FAN){
+    const a = want + off;
+    const nx = w.pos.x + Math.sin(a)*probe, nz = w.pos.z + Math.cos(a)*probe;
+    if(!blockedAt(nx, nz, w.radius) && Math.hypot(nx-player.pos.x, nz-player.pos.z) > gap){
+      open = a; break;
+    }
+  }
+  if(open === null){                              // boxed in: ignore the player
+    for(const off of FAN){
+      const a = want + off;
+      if(!blockedAt(w.pos.x + Math.sin(a)*probe, w.pos.z + Math.cos(a)*probe, w.radius)){
+        open = a; break;
+      }
+    }
+  }
+  if(open === null) open = want + Math.PI;
+
+  // a brief, bounded pause when he nearly bumps into you — never a deadlock
+  w.pause = Math.max(0, w.pause - dt);
+  w.pauseCool = Math.max(0, w.pauseCool - dt);
+  if(pd < 1.05 && w.pause <= 0 && w.pauseCool <= 0){ w.pause = 1.5; w.pauseCool = 8; }
+  const stopping = w.pause > 0 || w.greet > 0;
+  const target = stopping ? Math.atan2(-pdx, -pdz) : open;
+
+  let turn = target - w.yaw;
+  while(turn >  Math.PI) turn -= Math.PI*2;
+  while(turn < -Math.PI) turn += Math.PI*2;
+  w.yaw += Math.max(-2.7*dt, Math.min(2.7*dt, turn));
+
+  const wantSpeed = stopping ? 0 : 1.22 * Math.max(.25, 1 - Math.abs(turn)*.5);
+  w.speed += (wantSpeed - w.speed) * Math.min(1, dt*3.5);
+  if(w.greet > 0) w.greet -= dt;
+
+  // move, resolving each axis so he can slide along furniture
+  const step = w.speed * dt;
+  const nx = w.pos.x + Math.sin(w.yaw)*step, nz = w.pos.z + Math.cos(w.yaw)*step;
+  let moved = 0;
+  if(!blockedAt(nx, w.pos.z, w.radius)){ moved += Math.abs(nx-w.pos.x); w.pos.x = nx; }
+  if(!blockedAt(w.pos.x, nz, w.radius)){ moved += Math.abs(nz-w.pos.z); w.pos.z = nz; }
+
+  // never let him wedge: if he has gone nowhere for a while, move on
+  w.stuckT += dt;
+  if(w.stuckT > 1.1){
+    if(w.pos.distanceTo(w.last) < 0.18 && !stopping){
+      w.wi = (w.wi + 1) % w.route.length;
+      w.yaw += (rnd() < .5 ? 1 : -1) * 0.9;
+    }
+    w.last.copy(w.pos); w.stuckT = 0;
+  }
+
+  // ---- gait ----------------------------------------------------------
+  // the phase is driven by distance walked, so the feet never skate
+  const STRIDE = 1.38;
+  w.phase += (moved / STRIDE) * Math.PI * 2;
+  const th = w.phase, s = Math.sin(th), run = Math.min(1, w.speed / 1.22);
+
+  const legPose = (lg, p) => {
+    lg.hip.rotation.x = -0.42 * Math.sin(p) * run;
+    const bend = Math.max(0, Math.sin(p - 0.55));
+    lg.kn.rotation.x = (0.10 + 1.25 * Math.pow(bend, 1.35)) * run;
+    lg.an.rotation.x = (-0.20 * Math.sin(p + 1.15) + 0.06) * run;
+  };
+  legPose(w.legL, th);
+  legPose(w.legR, th + Math.PI);
+
+  const armPose = (am, p) => {
+    am.sh.rotation.x = 0.34 * Math.sin(p) * run;
+    am.sh.rotation.z = 0;
+    am.el.rotation.x = -(0.26 + 0.38 * Math.max(0, -Math.sin(p))) * run - 0.14;
+  };
+  armPose(w.armL, th);                       // arms swing against their own leg
+  armPose(w.armR, th + Math.PI);
+
+  // the body rides on top of all that
+  w.body.position.y = w.hipY - 0.020 + Math.cos(th*2) * 0.021 * run;
+  w.body.position.x = Math.sin(th) * 0.022 * run;
+  w.body.rotation.z = -0.045 * s * run;
+  w.body.rotation.y = -0.07 * s * run;
+  w.torso.rotation.y = 0.13 * s * run;
+  w.torso.rotation.x = 0.055 * run + 0.02;
+  w.head.rotation.y = -0.09 * s * run;
+  w.head.rotation.x = -0.03 * run;
+
+  // idle: breathe, and look at whoever is standing there
+  if(run < 0.08){
+    const br = Math.sin(clock*1.6)*0.012;
+    w.body.position.y = w.hipY + br;
+    w.torso.rotation.x = 0.02 + br*0.3;
+    w.armL.sh.rotation.x = 0.04 + br;  w.armR.sh.rotation.x = 0.04 - br;
+    w.armL.el.rotation.x = -0.22; w.armR.el.rotation.x = -0.22;
+  }
+  if(pd < 3.4){
+    const look = Math.atan2(-pdx, -pdz) - w.yaw;
+    let lk = look; while(lk > Math.PI) lk -= Math.PI*2; while(lk < -Math.PI) lk += Math.PI*2;
+    w.head.rotation.y += Math.max(-0.8, Math.min(0.8, lk)) * 0.75;
+    w.head.rotation.x += Math.max(-0.25, Math.min(0.25, (1.62 - 1.72) * 1.2));
+  }
+
+  w.root.position.set(w.pos.x, 0, w.pos.z);
+  w.root.rotation.y = w.yaw;
+  noelProp.x = w.pos.x; noelProp.z = w.pos.z;
 }
 
 /* ------------------------------------------------------------------ */
@@ -2332,7 +2843,8 @@ function animate(dt){
   updateDoors(dt);
   // doors that notice you coming
   for(const a of AUTO){
-    const d = Math.hypot(a.x - player.pos.x, a.z - player.pos.z);
+    let d = Math.hypot(a.x - player.pos.x, a.z - player.pos.z);
+    if(NOEL) d = Math.min(d, Math.hypot(a.x - NOEL.pos.x, a.z - NOEL.pos.z));
     a.door.target = d < a.r ? 1 : 0;
   }
   // mixers
@@ -2345,6 +2857,7 @@ function animate(dt){
       m.dough.position.y = 0.06 + Math.abs(Math.sin(m.spin*1.4))*0.004;
     }
   }
+  if(NOEL) updateWalker(NOEL, dt);
   // a live camera keeps you in frame
   for(const c of CAMERAS){
     const want = c.on ? Math.atan2(-(player.pos.x - c.x), -(player.pos.z - c.z)) - c.base : 0;
@@ -2352,6 +2865,11 @@ function animate(dt){
     while(d >  Math.PI) d -= Math.PI*2;
     while(d < -Math.PI) d += Math.PI*2;
     c.head.rotation.y += d * Math.min(1, dt*2.2);
+  }
+  for(let i=0;i<BULBS.length;i++){
+    const b = BULBS[i];
+    b.material === bulbMat && (void 0);
+    b.scale.setScalar(.085 + Math.sin(clock*1.5 + b.userData.ph)*0.003);
   }
   // bunting breathing in the draught from the door
   for(let i=0;i<BUNT.length;i++){
@@ -2471,6 +2989,7 @@ function begin(){
 }
 // a handle for debugging and for automated screenshots
 window.TENT = { player, camera, scene, renderer, PROPS, COL, M, setView, begin, blocked,
+                blockedAt, NOEL, updateWalker,
                 get nearest(){ return nearest; },
                 place(x,z,yaw,pitch){ player.pos.set(x,0,z); player.yaw=yaw;
                   if(pitch!==undefined) player.pitch=pitch; } };
