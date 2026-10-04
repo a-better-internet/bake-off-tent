@@ -445,6 +445,74 @@ function drawChalk(n){
   if(T && T.chalk) T.chalk.needsUpdate = true;
 }
 function texChalk(){ drawChalk(0); return finish(chalkCanvas,1,1); }
+
+// --- Welford Park: the house the tent stands in the grounds of ----------
+function texBrick(windows){
+  const Wd=1024, Ht=512, c=cvs(Wd,Ht), g=c.getContext('2d');
+  g.fillStyle='#9b5742'; g.fillRect(0,0,Wd,Ht);
+  for(let y=0;y<Ht;y+=8){                                    // courses
+    const off=((y/8)%2)?0:-13;
+    for(let x=off;x<Wd;x+=26){
+      const v=rr(-16,16)|0;
+      g.fillStyle='rgb('+(158+v)+','+(90+v*0.7|0)+','+(68+v*0.6|0)+')';
+      g.fillRect(x+1.2,y+1.2,23,5.6);
+    }
+  }
+  for(let i=0;i<300;i++){                                    // weathering
+    g.fillStyle='rgba(60,36,28,'+rr(.02,.07)+')';
+    g.fillRect(rnd()*Wd, rnd()*Ht, rr(8,60), rr(4,30));
+  }
+  const stone='#e4dcc8', shade='#cfc5ad';
+  // plinth and eaves band
+  g.fillStyle=stone; g.fillRect(0,Ht-26,Wd,26); g.fillRect(0,10,Wd,16);
+  g.fillStyle=shade; g.fillRect(0,Ht-26,Wd,4); g.fillRect(0,24,Wd,3);
+  // quoins up both edges
+  for(let y=26;y<Ht-26;y+=34){
+    const w=((y/34)|0)%2?30:46;
+    g.fillStyle=stone; g.fillRect(0,y,w,32); g.fillRect(Wd-w,y,w,32);
+    g.fillStyle=shade; g.fillRect(0,y+30,w,2); g.fillRect(Wd-w,y+30,w,2);
+  }
+  if(windows){
+    const cols=7, rows=3;
+    for(let r=0;r<rows;r++) for(let k=0;k<cols;k++){
+      const ww=62, wh=r===2?66:88;
+      const x=78+k*(Wd-200)/(cols-1)-ww/2;
+      const y=58+r*132 + (r===2?12:0);
+      g.fillStyle=stone; g.fillRect(x-9,y-9,ww+18,wh+18);      // surround
+      g.fillStyle=shade; g.fillRect(x-9,y-9,ww+18,6);
+      g.fillStyle='#2e3741'; g.fillRect(x,y,ww,wh);            // glass
+      g.strokeStyle='#f2efe6'; g.lineWidth=4;                  // sashes
+      g.strokeRect(x+2,y+2,ww-4,wh-4);
+      g.beginPath(); g.moveTo(x+ww/2,y); g.lineTo(x+ww/2,y+wh);
+      g.moveTo(x,y+wh/2); g.lineTo(x+ww,y+wh/2);
+      g.moveTo(x,y+wh/4); g.lineTo(x+ww,y+wh/4);
+      g.moveTo(x,y+wh*3/4); g.lineTo(x+ww,y+wh*3/4); g.stroke();
+      g.fillStyle='rgba(226,238,246,.30)'; g.fillRect(x+2,y+2,ww-4,wh/3);
+    }
+    // the doorcase, dead centre
+    const dx=Wd/2-46, dy=Ht-26-108;
+    g.fillStyle=stone; g.fillRect(dx-16,dy-26,124,134);
+    g.fillStyle='#55402f'; g.fillRect(dx,dy,92,108);
+    g.strokeStyle='#efe9dc'; g.lineWidth=3; g.strokeRect(dx+5,dy+5,82,98);
+    g.fillStyle=stone;                                        // pediment
+    g.beginPath(); g.moveTo(dx-22,dy-26); g.lineTo(dx+114,dy-26);
+    g.lineTo(dx+46,dy-62); g.closePath(); g.fill();
+  }
+  return finish(c,1,1);
+}
+function texSlate(){
+  const c=cvs(256,256), g=c.getContext('2d');
+  g.fillStyle='#6a6f74'; g.fillRect(0,0,256,256);
+  for(let y=0;y<256;y+=12){
+    const off=((y/12)%2)?0:-10;
+    for(let x=off;x<256;x+=20){
+      const v=rr(-14,14)|0;
+      g.fillStyle='rgb('+(106+v)+','+(111+v)+','+(116+v)+')';
+      g.fillRect(x+1,y+1,18,10);
+    }
+  }
+  return finish(c,1,1);
+}
 function texBunting(cols){
   const c = cvs(256,256), g = c.getContext('2d');
   g.fillStyle=cols; g.fillRect(0,0,256,256);
@@ -691,10 +759,12 @@ const trees = [];
 function clearOfTent(x,z, pad){
   return !(x > -pad && x < W+pad && z > -pad-12 && z < L+pad);
 }
+const PARK = { x0:84, x1:196, z0:-108, z1:12 };     // keep this view open
 for(let i=0;i<100;i++){
   const a = rnd()*6.283, d = rr(16, 230);
   const x = W/2 + Math.cos(a)*d, z = L/2 + Math.sin(a)*d*1.05;
   if(!clearOfTent(x, z, 11)) continue;
+  if(x > PARK.x0 && x < PARK.x1 && z > PARK.z0 && z < PARK.z1) continue;
   const s = d > 90 ? rr(1.1,1.8) : rr(0.75,1.45);
   trees.push(treeAt(x, z, s, rnd()<0.18 ? 'conifer' : (rnd()<0.4 ? 'beech':'oak')));
   if(d < 55) addCollider(x-0.55, x+0.55, z-0.55, z+0.55);
@@ -724,15 +794,82 @@ hedgeRun(BMAXX-1, BMINZ+2, BMAXX-1, BMAXZ-2, 2.0);   // right
 // ---- distant hills --------------------------------------------------
 const hillMat = new THREE.MeshStandardMaterial({ color:0x7e9a74, roughness:1, flatShading:true });
 for(let i=0;i<16;i++){
-  const a = rnd()*6.28, d = rr(290, 420);
-  const h = mesh(G.ico, hillMat, W/2+Math.cos(a)*d, rr(-8,4), L/2+Math.sin(a)*d);
-  h.scale.set(rr(120,260), rr(26,60), rr(120,260));
+  const a = rnd()*6.28, d = rr(390, 520);
+  const h = mesh(G.ico, hillMat, W/2+Math.cos(a)*d, rr(-16,-2), L/2+Math.sin(a)*d);
+  h.scale.set(rr(130,250), rr(34,72), rr(130,250));
   h.rotation.y = rnd()*3;
 }
-// a church spire on the horizon, because of course
-const spireG = new THREE.Group(); spireG.position.set(-160, 0, -130); world.add(spireG);
-box(7,16,7, hillMat, 0, 8, 0, spireG);
-mesh(G.cone, hillMat, 0, 24, 0, spireG).scale.set(9, 14, 9);
+/* ---- Welford Park house, across the lawn, with the church beside it ---- */
+(function welfordPark(){
+  const HX = 150, HZ = -45, ROT = -1.15;      // façade turned towards the tent
+  const g = new THREE.Group(); g.position.set(HX, 0, HZ); g.rotation.y = ROT; world.add(g);
+  const brickF = new THREE.MeshStandardMaterial({ map:texBrick(true),  roughness:.92 });
+  const brickP = new THREE.MeshStandardMaterial({ map:texBrick(false), roughness:.92 });
+  const slate  = new THREE.MeshStandardMaterial({ map:texSlate(), roughness:.85, side:THREE.DoubleSide });
+  const stone  = new THREE.MeshStandardMaterial({ color:0xe2dac6, roughness:.88 });
+
+  const BW = 30, BH = 13.5, BD = 15;                 // the main block
+  const block = new THREE.Mesh(G.unit, [brickP,brickP,brickP,brickP,brickF,brickF]);
+  block.scale.set(BW, BH, BD); block.position.y = BH/2; g.add(block);
+
+  // hipped roof: two trapezoids and two end triangles
+  function hip(w,d,h,y,inset,mat,parent){
+    const rl = w - inset*2, pos=[], uv=[];
+    const A=[-w/2,y,-d/2], B=[w/2,y,-d/2], C=[w/2,y,d/2], D=[-w/2,y,d/2];
+    const R1=[-rl/2,y+h,0], R2=[rl/2,y+h,0];
+    const tri=(p,q,r,u)=>{ pos.push(...p,...q,...r); uv.push(...u); };
+    tri(A,B,R2,[0,0, 4,0, 3,2]); tri(A,R2,R1,[0,0, 3,2, 1,2]);        // front
+    tri(C,D,R1,[0,0, 4,0, 3,2]); tri(C,R1,R2,[0,0, 3,2, 1,2]);        // back
+    tri(B,C,R2,[0,0, 2,0, 1,2]); tri(D,A,R1,[0,0, 2,0, 1,2]);         // hips
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+    geo.computeVertexNormals();
+    const m=new THREE.Mesh(geo,mat); parent.add(m); return m;
+  }
+  hip(BW+1.2, BD+1.2, 5.4, BH, 7, slate, g);
+  box(BW+1.6,.5,BD+1.6, stone, 0, BH+.2, 0, g);       // cornice
+
+  for(let i=0;i<5;i++){                                // dormers
+    const dx = (i-2)*5.2;
+    const d = new THREE.Group(); d.position.set(dx, BH+1.9, BD/2-2.1); g.add(d);
+    box(2.2,2.2,2.0, stone, 0,0,0, d);
+    box(1.1,1.3,.12, new THREE.MeshStandardMaterial({color:0x2e3741, roughness:.4}), 0,.1,1.02, d);
+    const r = mesh(G.cone, slate, 0, 1.5, 0, d); r.scale.set(3.4,1.5,3.0); r.rotation.y=Math.PI/4;
+  }
+  for(const cx2 of [-10.5,-3.5,3.5,10.5]){             // chimney stacks
+    box(2.6,6.2,2.0, brickP, cx2, BH+4.6, 0, g);
+    box(3.0,.5,2.4, stone, cx2, BH+7.6, 0, g);
+    for(let k=0;k<3;k++){
+      const pot = mesh(G.cyl, new THREE.MeshStandardMaterial({color:0xb47352, roughness:.9}),
+        cx2-.7+k*.7, BH+8.3, 0, g);
+      pot.scale.set(.5,1.3,.5);
+    }
+  }
+  // lower service wing, set back
+  const wing = new THREE.Mesh(G.unit, [brickP,brickP,brickP,brickP,brickP,brickP]);
+  wing.scale.set(12, 8.5, 10); wing.position.set(-20, 4.25, -3); g.add(wing);
+  hip(13, 11, 3.4, 8.5, 3, slate, g).position.set(-20, 0, -3);
+  box(2.2,5,1.8, brickP, -20, 11.5, -3, g);
+  // walled forecourt and a cedar beside it
+  box(26,1.5,.6, stone, 0, .75, BD/2+7, g);
+  for(const px of [-13,13]) box(1.1,2.6,1.1, stone, px, 1.3, BD/2+7, g);
+  treeAt(HX-36, HZ-14, 2.6, 'oak');
+  treeAt(HX+26, HZ-4, 2.2, 'beech');
+  treeAt(HX-16, HZ-24, 2.4, 'beech');
+
+  // the church, off to one side as at Welford
+  const sp = new THREE.Group(); sp.position.set(HX-46, 0, HZ-40); world.add(sp);
+  const chStone = new THREE.MeshStandardMaterial({ color:0xbdb59e, roughness:.95 });
+  box(9,7,16, chStone, 0, 3.5, 0, sp);
+  hip(10,17,2.6,7,4, slate, sp);
+  box(6.5,15,6.5, chStone, 0, 7.5, -10, sp);          // tower
+  box(7.4,.8,7.4, chStone, 0, 15.2, -10, sp);
+  const spire = mesh(G.cone, slate, 0, 22.5, -10, sp);
+  spire.scale.set(6.4, 13, 6.4);
+  for(const sx of [-1,1]) for(const sz of [-1,1])
+    box(.7,1.6,.7, chStone, sx*2.7, 16.3, -10+sz*2.7, sp);
+})();
 
 // ---- lawn furniture & borders --------------------------------------
 function flowerBed(cx, cz, w, d){
@@ -1000,7 +1137,8 @@ function updateDoors(dt){
 
 // ---- entrance flaps (open on approach) -------------------------------
 function entranceFlap(hingeX, dir){
-  const g = new THREE.Group(); g.position.set(hingeX, 0, 0); world.add(g);
+  // dir points INTO the doorway: the two flaps meet in the middle of the gap
+  const g = new THREE.Group(); g.position.set(hingeX, 0, -0.05); world.add(g);
   const w = (DX1-DX0)/2;
   const p = quad(v3(0,0,0), v3(dir*w,0,0), v3(dir*w,2.95,0), v3(0,2.95,0), M.canvas, 2, 1.2);
   world.remove(p); g.add(p);
@@ -1008,7 +1146,7 @@ function entranceFlap(hingeX, dir){
   const d = addDoor(g, 'y', dir*1.38, 2.0);
   AUTO.push({ door:d, x:hingeX + dir*w*0.5, z:0, r:3.4 });
 }
-entranceFlap(DX0, -1); entranceFlap(DX1, 1);
+entranceFlap(DX0, 1); entranceFlap(DX1, -1);
 // a canopy over the door so it reads as an entrance
 quad(v3(DX0-.9,2.95,0), v3(DX1+.9,2.95,0), v3(DX1+.9,2.55,-2.2), v3(DX0-.9,2.55,-2.2), M.roof, 2,1);
 for(const x of [DX0-.9, DX1+.9]) box(.09,2.55,.09, M.frame, x, 1.27, -2.15, tent);
@@ -1210,6 +1348,72 @@ function pTubs(x,y,z,p,n){
   }
   return g;
 }
+function pSieve(x,y,z,p){
+  const g = new THREE.Group(); g.position.set(x,y,z); p.add(g); g.rotation.y = rnd()*3;
+  const b = mesh(G.cylOpen, M.chrome, 0,.055,0,g); b.scale.set(.24,.09,.24);
+  const mshm = mesh(G.cyl, new THREE.MeshStandardMaterial({color:0x9aa3a6, roughness:.7}), 0,.02,0,g);
+  mshm.scale.set(.23,.012,.23);
+  const h = box(.2,.025,.03, M.wood, .22,.085,0,g);
+  return g;
+}
+function pPiping(x,y,z,p){
+  const g = new THREE.Group(); g.position.set(x,y,z); p.add(g);
+  g.rotation.set(0, rnd()*3, 1.52);
+  const bag = mesh(G.cone, new THREE.MeshStandardMaterial({color:0xf2efe4, roughness:.85}), 0,.055,0,g);
+  bag.scale.set(.085,.17,.085); bag.rotation.x = Math.PI;
+  const tip = mesh(G.cone, M.chrome, 0,-.04,0,g); tip.scale.set(.035,.05,.035); tip.rotation.x = Math.PI;
+  return g;
+}
+function pTins(x,y,z,p,n){
+  const g = new THREE.Group(); g.position.set(x,y,z); p.add(g);
+  let yy=0;
+  for(let i=0;i<(n||3);i++){
+    const t = mesh(G.cyl, i%2 ? M.chrome : M.steel, 0, yy+.028, 0, g);
+    t.scale.set(.30-i*.02,.055,.30-i*.02); yy += .062;
+  }
+  return g;
+}
+function pBook(x,y,z,p){
+  // a recipe book lying open: two wedges of pages either side of the spine
+  const g = new THREE.Group(); g.position.set(x,y,z); p.add(g); g.rotation.y = rr(-.6,.6);
+  const pg = new THREE.MeshStandardMaterial({color:0xf3eee0, roughness:.92});
+  const cover = new THREE.MeshStandardMaterial({color:pick([0x8a4a52,0x4a6a78,0x6b7a4a]), roughness:.78});
+  for(const sx of [-1,1]){
+    const blk = box(.21,.035,.28, pg, sx*.115, .038, 0, g);
+    blk.rotation.z = -sx*.055;
+    const cv = box(.225,.012,.295, cover, sx*.118, .018, 0, g);
+    cv.rotation.z = -sx*.055;
+  }
+  box(.05,.05,.3, cover, 0,.03,0,g);
+  for(let i=0;i<5;i++)                                   // a line or two of text
+    box(.12,.002,.006, new THREE.MeshStandardMaterial({color:0x7d7a70, roughness:1}),
+        .11, .057, -.07+i*.035, g);
+  return g;
+}
+function pSugar(x,y,z,p){
+  const g = new THREE.Group(); g.position.set(x,y,z); p.add(g); g.rotation.y = rr(-.5,.5);
+  shadeOn(box(.2,.28,.14, new THREE.MeshStandardMaterial({color:0xe8e4ea, roughness:.9}), 0,.14,0,g), true, false);
+  box(.17,.09,.145, new THREE.MeshStandardMaterial({color:0x6c88b4, roughness:.85}), 0,.16,.001,g);
+  return g;
+}
+let dustTex = null;
+function pDust(x,y,z,p,r){
+  if(!dustTex){
+    const c = cvs(64,64), g2 = c.getContext('2d');
+    const gr = g2.createRadialGradient(32,32,0,32,32,32);
+    gr.addColorStop(0,'rgba(255,253,246,.85)'); gr.addColorStop(.55,'rgba(252,248,236,.4)');
+    gr.addColorStop(1,'rgba(250,246,234,0)');
+    g2.fillStyle=gr; g2.fillRect(0,0,64,64);
+    for(let i=0;i<120;i++){ g2.fillStyle='rgba(255,255,255,'+rr(.1,.5)+')';
+      g2.fillRect(rnd()*64, rnd()*64, rr(1,3), rr(1,3)); }
+    dustTex = new THREE.CanvasTexture(c); dustTex.encoding = THREE.sRGBEncoding;
+  }
+  const m = mesh(G.plane, new THREE.MeshBasicMaterial({ map:dustTex, transparent:true,
+    opacity:.42, depthWrite:false }), x, y+.004, z, p);
+  m.rotation.x = -Math.PI/2; m.rotation.z = rnd()*3; m.scale.set(r,r,1);
+  return m;
+}
+
 // a bake: six kinds, so no two benches look alike
 function pBake(x,y,z,p,kind,s){
   s = s||1;
@@ -1457,26 +1661,67 @@ function buildBench(cx, cz, hex, idx){
     act(){ mix.on = !mix.on;
            return mix.on ? 'The paddle turns. Flour dust lifts off the bowl.' : 'Mixer off.'; } });
 
-  // ---- the clutter ----
+  // ---- the clutter: every bench laid out differently ----------------
+  // free slots along the front and back of the worktop, plus whatever gaps
+  // the sink, hob and mixer leave in between
   const y = IH + .085;
-  pBowl(-IW/2+1.5, y+.06, -.28, g, .17);
-  pBowl(-IW/2+1.26, y+.05, .3, g, .14);
-  pFlour(-IW/2+.12, y, -.3, g, 1);
-  pEggs(IW/2-1.15, y, .32, g);
-  pPin(-.1, y+.04, .4, g);
-  pScales(IW/2-1.5, y, -.3, g);
-  pUtensils(IW/2-.12, y, .3, g);
-  if(idx%3===0) pRack(-IW/2+.55, y, .36, g);
-  if(idx%4===1) pTubs(IW/2-.1, y, -.35, g, 2);
-  if(idx%2===0) pStand(-IW/2+.95, y, -.1, g, idx%6);
-  else pBake(-IW/2+.95, y, -.1, g, (idx+2)%6, .9);
-  pJar(IW/2-.85, y, .35, g, .2);
-  pJar(IW/2-.68, y, .2, g, .15);
+  const busy = [[sx,.34],[hx2,.34],[IW/2-.55,.27]];
+  const slots = [];
+  for(let gx=-IW/2+.26; gx<=IW/2-.26; gx+=0.29){
+    slots.push([gx,-0.52]);                                  // front rail
+    if(Math.abs(gx-sx) > .45) slots.push([gx, 0.5]);          // back, clear of the tap
+    if(!busy.some(b => Math.abs(gx-b[0]) < b[1])) slots.push([gx, 0.02]);
+  }
+  for(let i=slots.length-1;i>0;i--){                          // shuffle
+    const j=(rnd()*(i+1))|0; const t=slots[i]; slots[i]=slots[j]; slots[j]=t;
+  }
+  let si = 0;
+  const next = () => slots[si++ % slots.length];
+  // a pool of things a baker might have out, drawn from differently each time
+  const pool = [
+    ()=>{ const [a,b]=next(); pBowl(a, y+.06, b, g, rr(.12,.19)); },
+    ()=>{ const [a,b]=next(); pBowl(a, y+.05, b, g, rr(.1,.15));
+          const [c,d]=next(); pBowl(c, y+.05, d, g, rr(.09,.13)); },
+    ()=>{ const [a,b]=next(); pFlour(a, y, b, g, rr(.85,1.1)); },
+    ()=>{ const [a,b]=next(); pSugar(a, y, b, g); },
+    ()=>{ const [a,b]=next(); pEggs(a, y, b, g); },
+    ()=>{ const [a,b]=next(); pPin(a, y+.04, b, g); },
+    ()=>{ const [a,b]=next(); pScales(a, y, b, g); },
+    ()=>{ const [a,b]=next(); pUtensils(a, y, b, g); },
+    ()=>{ const [a,b]=next(); pRack(a, y, b, g); },
+    ()=>{ const [a,b]=next(); pTubs(a, y, b, g, 2 + ((rnd()*2)|0)); },
+    ()=>{ const [a,b]=next(); pSieve(a, y, b, g); },
+    ()=>{ const [a,b]=next(); pPiping(a, y+.05, b, g); },
+    ()=>{ const [a,b]=next(); pTins(a, y, b, g, 2 + ((rnd()*2)|0)); },
+    ()=>{ const [a,b]=next(); pBook(a, y, b, g); },
+    ()=>{ const [a,b]=next(); pJar(a, y, b, g, rr(.14,.24));
+          const [c,d]=next(); pJar(c, y, d, g, rr(.12,.2)); }
+  ];
+  for(let i=pool.length-1;i>0;i--){
+    const j=(rnd()*(i+1))|0; const t=pool[i]; pool[i]=pool[j]; pool[j]=t;
+  }
+  const items = 7 + ((rnd()*5)|0);                            // 7–11 things out
+  for(let i=0;i<items;i++) pool[i % pool.length]();
+
+  // the bake itself: on a stand, on a board, or still in a tin
+  const show = (rnd()*3)|0, [bx,bz] = next();
+  if(show === 0) pStand(bx, y, bz, g, (rnd()*6)|0);
+  else if(show === 1) pBake(bx, y, bz, g, (rnd()*6)|0, rr(.85,1.0));
+  else { const t = mesh(G.cyl, M.steel, bx, y+.03, bz, g); t.scale.set(.42,.06,.42);
+         pBake(bx, y+.06, bz, g, (rnd()*6)|0, .72); }
+
+  // some bakers work tidily; some leave flour everywhere
+  const mess = rnd();
+  if(mess > .45){
+    for(let i=0;i<1+((rnd()*3)|0);i++){
+      const [a,b] = next(); pDust(a, IH+.082, b, g, rr(.2,.4));
+    }
+  }
 
   // tea towels, hung clear of the oven door
-  const tw = mesh(G.plane, towelMats[idx%3], IW/2-.42, IH-.22, -ID/2-.025, g);
+  const tw = mesh(G.plane, towelMats[(rnd()*towelMats.length)|0], IW/2-.42, IH-.22, -ID/2-.025, g);
   tw.scale.set(.3,.42,1); tw.rotation.z = rr(-.08,.08);
-  const tw2 = mesh(G.plane, towelMats[(idx+1)%3], IW/2+.08, IH-.26, .18, g);
+  const tw2 = mesh(G.plane, towelMats[(rnd()*towelMats.length)|0], IW/2+.08, IH-.26, .18, g);
   tw2.scale.set(.26,.36,1); tw2.rotation.y = Math.PI/2;
 
   // name card, propped on the corner
@@ -1503,17 +1748,21 @@ function buildBench(cx, cz, hex, idx){
   colliderFor({position:{x:cx,z:cz}}, IW+.2, ID+.2);
   return g;
 }
-const benchCols = [0x8fc9c2, 0xb3c49f, 0xa7bed6, 0x8fc9c2, 0xdcafb8, 0xb3c49f];
+const benchCols = [0x8fc9c2, 0xb3c49f, 0xa7bed6, 0xdcafb8, 0x9ec8bd, 0xc6c3a6,
+                   0x7fb8c4, 0xd3b2a4, 0xaec3d8, 0xc9b8cf, 0x9cc4a8, 0xe0c9a8];
 ROWZ.forEach((z,i)=>{
-  buildBench(BENCH_L, z, benchCols[i%benchCols.length], i);
-  buildBench(BENCH_R, z, benchCols[(i+2)%benchCols.length], i+6);
+  buildBench(BENCH_L, z, benchCols[i], i);
+  buildBench(BENCH_R, z, benchCols[i+6], i+6);
 });
 
 /* ------------------------------------------------------------------ */
 /* 13 · Fridges down the side walls (one per bench)                    */
 /* ------------------------------------------------------------------ */
-function buildFridge(x, z, face, hex, idx){
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = face; world.add(g);
+function buildFridge(x, z, side, hex, idx){
+  // side = +1 for the left-hand wall, -1 for the right: either way the door
+  // turns in to face the prep benches rather than down the tent
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  g.rotation.y = side * Math.PI/2; world.add(g);
   const body = new THREE.MeshStandardMaterial({ color:hex, roughness:.33, metalness:.12 });
   const FW = .78, FH = 1.80, FD = .74, FT = .055;
   const y0 = .17, y1 = FH - .13;                       // cavity top and bottom
@@ -1588,7 +1837,7 @@ function buildFridge(x, z, face, hex, idx){
   box(FW+.03,.04,.05, body, 0, FH-.05, leafZ, leaf);             // cap rail
 
   const d = addDoor(door, 'y', -1.38, 2.2);   // swings out and away from the wall
-  const ax = x + (face === 0 ? 1.05 : -1.05);
+  const ax = x + side * 1.15;
   PROPS.push({ x:ax, z:z, r:1.6, label:'the cold store', found:false,
     verb(){ return d.target ? 'Close' : 'Open'; },
     act(){ d.target = d.target ? 0 : 1;
@@ -1596,12 +1845,12 @@ function buildFridge(x, z, face, hex, idx){
            strip.material.emissiveIntensity = d.target ? .9 : 0;
            return d.target ? 'Cold air, and ' + nm + "'s mousse setting on the middle shelf."
                            : 'Shut — it needs to stay cold.'; } });
-  addCollider(x-.5, x+.5, z-.45, z+.45);
+  addCollider(x-.44, x+.44, z-.46, z+.46);
 }
 const fridgeCols = [0x8fc9c2, 0xdcafb8, 0xa7bed6, 0xb3c49f, 0xe8d9a8, 0xc9d6dd];
 ROWZ.forEach((z,i)=>{
-  buildFridge(0.92, z-0.4, 0, fridgeCols[i%fridgeCols.length], i);
-  buildFridge(W-0.92, z-0.4, Math.PI, fridgeCols[(i+3)%fridgeCols.length], i+6);
+  buildFridge(0.96, z-0.35,  1, fridgeCols[i%fridgeCols.length], i);
+  buildFridge(W-0.96, z-0.35, -1, fridgeCols[(i+3)%fridgeCols.length], i+6);
 });
 
 /* ------------------------------------------------------------------ */
@@ -1789,6 +2038,7 @@ let bellRing = 0, bellG = null;
 
 // The environment map is here for the sheen on metal and glaze, not to
 // light the room — keep its contribution low or everything blows out.
+M.canvas.name='canvas'; M.roof.name='roof'; M.clear.name='clear'; M.frame.name='frame';
 scene.traverse(o=>{
   if(!o.material) return;
   const list = Array.isArray(o.material) ? o.material : [o.material];
@@ -1867,19 +2117,6 @@ crateStack(1.9, 20.5, 2); crateStack(W-1.9, 16.4, 3); crateStack(2.1, 28.8, 1);
   addCollider(x-.4, x+.4, z-.4, z+.4);
 })();
 
-// cable runs taped down the edge of the floor
-(function cables(){
-  const cm = new THREE.MeshStandardMaterial({ color:0x24282b, roughness:.9 });
-  for(const [x0,x1] of [[1.1,1.1],[W-1.1,W-1.1]]){
-    for(let z=2; z<L-1; z+=1.8){
-      box(.055,.045, 1.84, cm, x0 + Math.sin(z*0.7)*0.05, .045, z, world);
-    }
-  }
-  for(const rigz of [12.2, 24.6]){
-    for(let i=0;i<7;i++)
-      box(.05,.04,1.04, cm, 1.6 + i*1.0, .045, rigz + Math.sin(i)*0.12, world).rotation.y = Math.PI/2;
-  }
-})();
 
 /* ------------------------------------------------------------------ */
 /* 16 · Player                                                         */
@@ -2233,7 +2470,7 @@ function begin(){
   }, 900);
 }
 // a handle for debugging and for automated screenshots
-window.TENT = { player, camera, scene, renderer, PROPS, COL, setView, begin, blocked,
+window.TENT = { player, camera, scene, renderer, PROPS, COL, M, setView, begin, blocked,
                 get nearest(){ return nearest; },
                 place(x,z,yaw,pitch){ player.pos.set(x,0,z); player.yaw=yaw;
                   if(pitch!==undefined) player.pitch=pitch; } };

@@ -46,8 +46,9 @@ how many you've found:
 - **12 ovens** under the benches — the door drops open onto a real cavity:
   enamel walls, a wire shelf, the elements coming up to heat, and whatever is
   baking on the tray.
-- **12 fridges** down the side walls — edge-hinged doors onto lit interiors
-  with glass shelves, door bins and somebody's mousse setting.
+- **12 fridges** down the side walls, turned in to face the prep benches —
+  edge-hinged doors onto lit interiors with glass shelves, door bins and
+  somebody's mousse setting.
 - **12 stand mixers** — start one and the beater turns in the bowl.
 - **12 taps** — run the water; it drums on the steel.
 - **12 hobs** — bring the rings up to a glow.
@@ -71,7 +72,13 @@ location rather than a backdrop:
   and soft through the canvas.
 - You can walk out of the entrance and all the way round the outside. The lawn
   runs to a hedge boundary, with trees, flower borders, a gravel path, picnic
-  benches and deck chairs; hills and a church spire sit on the horizon.
+  benches and deck chairs.
+- **Welford Park house** stands across the park to the east — red brick, stone
+  quoins and dressings, a hipped slate roof with dormers and four chimney
+  stacks, a lower service wing and a walled forecourt — with the church tower
+  and spire beyond it, as in the photographs the tent is pitched in front of.
+  The whole façade is one painted texture, which is what lets a landmark that
+  size cost two draw calls.
 - Clouds drift, trees sway, birds circle, dust turns over in the shafts of
   afternoon sun leaning in through the sunny wall.
 
@@ -83,9 +90,16 @@ The sheets are then subdivided and sagged between the bays, so the roof dips
 slightly between every truss and the walls bow out between the posts, and a
 scalloped valance hangs off all four eaves.
 
-Every texture — timber, canvas, grass, gravel, painted shaker panels, the
-chalkboard, bunting, tea towels, the name cards — is painted into a `<canvas>`
-at boot. There are no image files anywhere.
+No two benches are laid out alike. Each is dressed from a shuffled pool of
+props — bowls, flour and sugar, eggs, a rolling pin, scales, a utensil pot, a
+cooling rack, tubs, a sieve, a piping bag, cake tins, an open recipe book,
+jars — dropped into whatever slots the sink, hob and mixer leave free, seven
+to eleven at a time. The bake might be on a stand, on a board or still in its
+tin, and some bakers leave flour all over the worktop.
+
+Every texture — timber, canvas, grass, gravel, painted shaker panels, brick,
+slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
+`<canvas>` at boot. There are no image files anywhere.
 
 ## How it's built
 
