@@ -102,6 +102,14 @@ Every texture — timber, canvas, grass, gravel, painted shaker panels, brick,
 slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
 `<canvas>` at boot. There are no image files anywhere.
 
+## The marquee
+
+The roof is a peaked "Capri" frame, as the real one is: four pagoda points
+along the ridge with the canvas falling to a valley where the bays meet, a
+pole and finial under every point, and hip rafters running off each one. The
+canvas is taut at the poles and swags between them, which is the shape that
+tells you it is a tent and not a shed.
+
 ## Cosiness
 
 Festoon lights sag along both eaves and across each end, with three low warm
@@ -110,6 +118,23 @@ by the entrance — two armchairs, a throw over one arm, a low table with an urn
 mugs and a teapot, a crate of books — faded kilim rugs down the middle and in
 the corners, hurricane lanterns on the floor, bunches of dried flowers tied to
 the frame, and more pots of greenery along the walls.
+
+## The display wall
+
+Worked up from the production photographs: tongue-and-groove panelling, the
+arched fanlight in duck-egg with radial glazing bars over a backlit amber
+panel, a BAKE sign in bulb-lit letters on the shelf, a dozen coloured glass
+mugs on hooks, union-jack bunting, enamel plates and framed prints on the
+wall, a sink and tall tap in the counter, wire baskets and stacked mixing
+bowls in the open bays, and cakes on stands along the worktop.
+
+## Out across the park
+
+The lawn is mown in stripes. Beyond the boundary hedge — broken by a five-bar
+field gate so you can see through it — there is a pond with reeds, rushes and
+seven ducks drifting on it, the water rippling under a scrolling bump map.
+Trees come in six kinds now: oak, beech, poplar, conifer, spring blossom and
+bare winter branches. A picket fence runs along the lawn in front of the tent.
 
 ## The walker
 

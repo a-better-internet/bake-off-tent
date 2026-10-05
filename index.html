@@ -184,7 +184,19 @@ window.TENT_START = function(){
 /* 0 · World constants                                                 */
 /* ------------------------------------------------------------------ */
 const W = 18, L = 36;                 // tent footprint: x 0..18, z 0..36
-const EAVE = 3.2, RIDGE = 6.5;        // side-wall height, ridge height
+const EAVE = 3.2;                     // side-wall height
+// The real marquee is a peaked "Capri" frame: four pagoda points along the
+// ridge, with the canvas falling away to a valley where the bays meet.
+const PEAKS = 4, RIDGE_V = EAVE + 1.1, RIDGE = EAVE + 4.05;
+// 1 at a peak, 0 where two bays meet. The exponent below 1 gives the slightly
+// swept, concave rise of tensioned canvas rather than a dome.
+function peakProfile(z){
+  const u = (z / L) * PEAKS, f = u - Math.floor(u);
+  return Math.pow(1 - Math.abs(2*f - 1), 0.80);
+}
+function ridgeY(z){ return RIDGE_V + (RIDGE - RIDGE_V) * peakProfile(z); }
+const PEAKZ = [];                     // where the poles stand
+for(let i=0;i<PEAKS;i++) PEAKZ.push((i + 0.5) * L / PEAKS);
 const DX0 = 7.1, DX1 = 10.9;          // entrance gap in the front wall
 const ROWZ = [10, 14, 18, 22, 26, 30];// six rows of benches
 const BENCH_L = 4.7, BENCH_R = 13.3;  // the two banks
@@ -346,6 +358,11 @@ function texGrass(){
     g.fillStyle = rnd()<.55 ? 'rgba(248,246,232,.9)' : 'rgba(246,214,88,.85)';
     g.beginPath(); g.arc(rnd()*512, rnd()*512, rr(1.3,2.6), 0, 6.3); g.fill();
   }
+  // the mower stripes: eight bands per tile, so roughly 1.2m on the ground
+  for(let i=0;i<8;i++){
+    g.fillStyle = i%2 ? 'rgba(236,246,214,.17)' : 'rgba(44,74,36,.13)';
+    g.fillRect(0, i*64, 512, 64);
+  }
   return finish(c, 1, 1);
 }
 // pastel shaker cabinetry: n recessed panels across
@@ -445,6 +462,44 @@ function drawChalk(n){
   if(T && T.chalk) T.chalk.needsUpdate = true;
 }
 function texChalk(){ drawChalk(0); return finish(chalkCanvas,1,1); }
+
+function texPlank(){
+  const c = cvs(256,256), g = c.getContext('2d');
+  g.fillStyle='#e9e2d0'; g.fillRect(0,0,256,256);
+  for(let x=0;x<256;x+=21){                                  // tongue and groove
+    g.fillStyle='rgba(176,168,146,.55)'; g.fillRect(x,0,1.6,256);
+    g.fillStyle='rgba(255,253,246,.7)';  g.fillRect(x+2,0,1.4,256);
+    const v=rr(-7,7)|0;
+    g.fillStyle='rgba('+(233+v)+','+(226+v)+','+(208+v)+',.5)';
+    g.fillRect(x+4,0,16,256);
+  }
+  for(let i=0;i<500;i++){
+    g.fillStyle='rgba(160,150,128,'+rr(.01,.05)+')';
+    g.fillRect(rnd()*256, rnd()*256, rr(1,10), rr(1,2));
+  }
+  return finish(c,1,1);
+}
+function texUnionFlag(){
+  const c = cvs(128,80), g = c.getContext('2d');
+  g.fillStyle='#1d3a7a'; g.fillRect(0,0,128,80);
+  g.strokeStyle='#f4f4f2'; g.lineWidth=18; g.lineCap='butt';
+  g.beginPath(); g.moveTo(0,0); g.lineTo(128,80); g.moveTo(128,0); g.lineTo(0,80); g.stroke();
+  g.strokeStyle='#c8102e'; g.lineWidth=9;
+  g.beginPath(); g.moveTo(0,0); g.lineTo(128,80); g.moveTo(128,0); g.lineTo(0,80); g.stroke();
+  g.strokeStyle='#f4f4f2'; g.lineWidth=30;
+  g.beginPath(); g.moveTo(64,0); g.lineTo(64,80); g.moveTo(0,40); g.lineTo(128,40); g.stroke();
+  g.strokeStyle='#c8102e'; g.lineWidth=18;
+  g.beginPath(); g.moveTo(64,0); g.lineTo(64,80); g.moveTo(0,40); g.lineTo(128,40); g.stroke();
+  return finish(c,1,1);
+}
+function texBakeSign(){
+  const c = cvs(512,140), g = c.getContext('2d');
+  g.clearRect(0,0,512,140);
+  g.fillStyle='#f6f4ec'; g.strokeStyle='#cfc8ba'; g.lineWidth=5;
+  g.font='bold 118px Georgia,serif'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText('BAKE', 256, 74); g.strokeText('BAKE', 256, 74);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
 
 // --- Welford Park: the house the tent stands in the grounds of ----------
 function texBrick(windows){
@@ -725,7 +780,33 @@ function treeAt(x, z, s, kind){
   const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g);
   const near = Math.hypot(x-W/2, z-L/2) < 70;
   const leafGeo = near ? G.ico1 : G.ico;
-  if(kind === 'conifer'){
+  if(kind === 'poplar'){
+    shadeOn(box(.42*s, 7.5*s, .42*s, M.bark, 0, 3.75*s, 0, g), near, false);
+    for(let i=0;i<5;i++){
+      const c = mesh(leafGeo, i%2 ? M.leafA : M.leafC, rr(-.3,.3)*s, (2.6+i*1.5)*s, rr(-.3,.3)*s, g);
+      const r = (1.6 - i*0.19)*s;
+      c.scale.set(r*2, r*3.0, r*2); c.rotation.y = rnd()*3;
+      shadeOn(c, near, false);
+    }
+  } else if(kind === 'blossom'){
+    const th = 2.6*s;
+    shadeOn(box(.5*s, th, .5*s, M.bark, 0, th/2, 0, g), near, false);
+    for(let i=0;i<4;i++){
+      const r = rr(1.5,2.3)*s;
+      const c = mesh(leafGeo, blossomMats[(rnd()*blossomMats.length)|0],
+        rr(-1.1,1.1)*s, th + rr(.2,1.4)*s, rr(-1.1,1.1)*s, g);
+      c.scale.set(r*2, r*1.6, r*2); c.rotation.set(rnd()*3,rnd()*3,rnd()*3);
+      shadeOn(c, near, false);
+    }
+  } else if(kind === 'bare'){
+    const th = 4.2*s;
+    shadeOn(box(.5*s, th, .5*s, M.bark, 0, th/2, 0, g), near, false);
+    for(let i=0;i<7;i++){
+      const a = (i/7)*6.283 + rr(-.3,.3), ln = rr(1.6,3.0)*s;
+      const b = box(.13*s, ln, .13*s, M.bark, Math.cos(a)*.5*s, th*.78 + ln*.38, Math.sin(a)*.5*s, g);
+      b.rotation.z = -Math.cos(a)*rr(.5,.9); b.rotation.x = Math.sin(a)*rr(.5,.9);
+    }
+  } else if(kind === 'conifer'){
     shadeOn(box(.5*s,3.4*s,.5*s, M.bark, 0, 1.7*s, 0, g), near, false);
     for(let i=0;i<4;i++){
       const r = (2.5 - i*0.5)*s, h = (3.4 - i*0.3)*s;
@@ -754,6 +835,8 @@ function treeAt(x, z, s, kind){
   g.userData.phase = rnd()*6.28;
   return g;
 }
+const blossomMats = [0xe8d2dc, 0xf0dfe4, 0xdfe6d2, 0xf2e8e2].map(c =>
+  new THREE.MeshStandardMaterial({ color:c, roughness:1, flatShading:true }));
 const trees = [];
 // keep an apron of clear grass around the marquee so it reads as a lawn
 function clearOfTent(x,z, pad){
@@ -766,7 +849,11 @@ for(let i=0;i<100;i++){
   if(!clearOfTent(x, z, 11)) continue;
   if(x > PARK.x0 && x < PARK.x1 && z > PARK.z0 && z < PARK.z1) continue;
   const s = d > 90 ? rr(1.1,1.8) : rr(0.75,1.45);
-  trees.push(treeAt(x, z, s, rnd()<0.18 ? 'conifer' : (rnd()<0.4 ? 'beech':'oak')));
+  const roll = rnd();
+  const kind = roll < .15 ? 'conifer' : roll < .28 ? 'poplar'
+             : roll < .37 ? 'blossom' : roll < .44 ? 'bare'
+             : roll < .68 ? 'beech' : 'oak';
+  trees.push(treeAt(x, z, s, kind));
   if(d < 55) addCollider(x-0.55, x+0.55, z-0.55, z+0.55);
 }
 // a stately pair flanking the approach, as at a park house
@@ -788,7 +875,18 @@ function hedgeRun(x0,z0,x1,z1, h){
 }
 hedgeRun(BMINX+1, BMINZ+2, BMAXX-1, BMINZ+2, 1.9);   // front
 hedgeRun(BMINX+1, BMAXZ-2, BMAXX-1, BMAXZ-2, 2.2);   // back
-hedgeRun(BMINX+1, BMINZ+2, BMINX+1, BMAXZ-2, 2.0);   // left
+// the west hedge is broken by a field gate, so the pond beyond is in view
+hedgeRun(BMINX+1, BMINZ+2, BMINX+1, 12.5, 2.0);
+hedgeRun(BMINX+1, 19.5, BMINX+1, BMAXZ-2, 2.0);
+(function fieldGate(){
+  const gx = BMINX+1, z0 = 12.5, z1 = 19.5, wm =
+    new THREE.MeshStandardMaterial({ color:0x9d8a6b, roughness:.95 });
+  for(const pz of [z0, z1]) shadeOn(box(.18,1.5,.18, wm, gx, .75, pz, world), true, true);
+  for(let i=0;i<5;i++) box(.1,.11,z1-z0, wm, gx, .35+i*.26, (z0+z1)/2, world);
+  const br = box(.1,.12,Math.hypot(z1-z0,1.1), wm, gx, .78, (z0+z1)/2, world);
+  br.rotation.x = Math.atan2(1.1, z1-z0);
+  addCollider(gx-.25, gx+.25, z0-.2, z1+.2);
+})();
 hedgeRun(BMAXX-1, BMINZ+2, BMAXX-1, BMAXZ-2, 2.0);   // right
 
 // ---- distant hills --------------------------------------------------
@@ -938,6 +1036,92 @@ function deckchair(x,z,rot){
 }
 deckchair(-2.6, 9.2, 0.6); deckchair(-3.5, 11.6, 0.35); deckchair(W+2.8, 12, -0.7);
 
+// ---- the pond -------------------------------------------------------
+const DUCKS = [];
+let pondWater = null;
+(function pond(){
+  const PX = -54, PZ = 15, PR = 15, PB = 10;
+  // ripple texture, scrolled slowly, doing duty as a normal/bump map
+  const rc = cvs(256,256), rg = rc.getContext('2d');
+  rg.fillStyle='#808080'; rg.fillRect(0,0,256,256);
+  for(let i=0;i<90;i++){
+    const x=rnd()*256,y=rnd()*256,r=rr(10,46);
+    const gr=rg.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'rgba(255,255,255,.22)'); gr.addColorStop(.5,'rgba(0,0,0,.14)');
+    gr.addColorStop(1,'rgba(128,128,128,0)');
+    rg.fillStyle=gr; rg.beginPath(); rg.arc(x,y,r,0,6.3); rg.fill();
+  }
+  const ripple = finish(rc, 6, 6);
+  pondWater = new THREE.MeshStandardMaterial({ color:0x55707a, roughness:.08, metalness:.45,
+    bumpMap:ripple, bumpScale:.035, transparent:true, opacity:.93 });
+  const w = mesh(new THREE.CircleGeometry(1, 36), pondWater, PX, 0.06, PZ);
+  w.rotation.x = -Math.PI/2; w.scale.set(PR, PB, 1);
+  // muddy bank just inside the grass
+  const bank = mesh(new THREE.RingGeometry(0.92, 1.06, 36),
+    new THREE.MeshStandardMaterial({ color:0x6d6148, roughness:1 }), PX, 0.05, PZ);
+  bank.rotation.x = -Math.PI/2; bank.scale.set(PR, PB, 1);
+  // reeds and rushes round the edge
+  const reedM = new THREE.MeshStandardMaterial({ color:0x5f7a44, roughness:1, side:THREE.DoubleSide });
+  const sedgeM = new THREE.MeshStandardMaterial({ color:0x8a7a4a, roughness:1 });
+  for(let i=0;i<34;i++){
+    const a = rnd()*6.283, rx = PR*rr(.93,1.07), rz = PB*rr(.93,1.07);
+    const x = PX + Math.cos(a)*rx, z = PZ + Math.sin(a)*rz;
+    for(let k=0;k<4;k++){
+      const b = mesh(G.plane, reedM, x+rr(-.4,.4), rr(.5,1.1), z+rr(-.4,.4));
+      b.scale.set(.24, rr(1.0,2.1), 1); b.rotation.set(rr(-.2,.2), rnd()*3, rr(-.25,.25));
+    }
+    if(rnd()<.35){
+      const h = mesh(G.cyl, sedgeM, x, 1.5, z); h.scale.set(.07,.4,.07);
+    }
+  }
+  // a dead willow leaning over the water
+  treeAt(PX - PR*0.85, PZ - PB*0.5, 1.7, 'bare');
+  treeAt(PX + PR*0.7, PZ + PB*0.8, 2.1, 'beech');
+  // ducks
+  const drake = [0x24402c, 0xf0ead8, 0x7a5236, 0x9aa0a4];
+  for(let i=0;i<7;i++){
+    const g = new THREE.Group();
+    const female = i > 3;
+    const bodyC = female ? 0x7d6446 : drake[3];
+    const bm = new THREE.MeshStandardMaterial({ color:bodyC, roughness:.85 });
+    const bd = mesh(G.sphere, bm, 0,0,0, g); bd.scale.set(.46,.3,.72);
+    const tail = mesh(G.cone, bm, 0,.06,-.42, g);
+    tail.scale.set(.2,.3,.2); tail.rotation.x = -1.9;
+    const neck = mesh(G.cyl, new THREE.MeshStandardMaterial({
+      color: female ? 0x7d6446 : drake[0], roughness:.8 }), 0,.17,.22, g);
+    neck.scale.set(.16,.26,.16); neck.rotation.x = .25;
+    const hd = mesh(G.sphere, new THREE.MeshStandardMaterial({
+      color: female ? 0x8a7152 : drake[0], roughness:.55 }), 0,.3,.28, g);
+    hd.scale.setScalar(.27);
+    const bk = mesh(G.cone, new THREE.MeshStandardMaterial({ color:0xd8a43c, roughness:.6 }),
+      0,.28,.44, g);
+    bk.scale.set(.12,.2,.12); bk.rotation.x = Math.PI/2;
+    if(!female){ const col = mesh(G.cyl, new THREE.MeshStandardMaterial({color:drake[1], roughness:.8}),
+      0,.19,.24, g); col.scale.set(.185,.05,.185); col.rotation.x = .25; }
+    g.scale.setScalar(.85);
+    world.add(g);
+    DUCKS.push({ g, a: rnd()*6.283, r: rr(.15,.72), sp: rr(.05,.14)*(rnd()<.5?1:-1),
+                 ph: rnd()*6.28, px:PX, pz:PZ, pr:PR, pb:PB });
+  }
+})();
+
+// ---- a picket fence along the lawn, as at the real thing --------------
+(function pickets(){
+  const wm = new THREE.MeshStandardMaterial({ color:0xf2f0e8, roughness:.85 });
+  const run = (x0,x1,z) => {
+    for(let x=x0; x<=x1; x+=0.60){
+      box(.085,.95,.035, wm, x, .47, z, world);
+      mesh(G.cone, wm, x, .99, z, world).scale.set(.085,.11,.035);
+    }
+    box(x1-x0,.06,.05, wm, (x0+x1)/2,.72,z, world);
+    box(x1-x0,.06,.05, wm, (x0+x1)/2,.28,z, world);
+    for(let x=x0; x<=x1; x+=3.2) box(.1,1.05,.09, wm, x,.52,z, world);
+    addCollider(x0-.1, x1+.1, z-.12, z+.12);
+  };
+  run(-9.5, 4.2, -3.6);
+  run(13.8, 27.5, -3.6);
+})();
+
 // ---- birds ----------------------------------------------------------
 const birds = [];
 const birdMat = new THREE.MeshBasicMaterial({ color:0x4a5560, side:THREE.DoubleSide, fog:false });
@@ -1071,14 +1255,38 @@ clothQuad(v3(W,0,L), v3(0,0,L), v3(0,EAVE,L), v3(W,EAVE,L),
 // ---- roof: two translucent slopes + gable triangles ------------------
 const RX = W/2;
 const shell = new THREE.Group(); world.add(shell);   // hidden in the plan views
-clothQuad(v3(0,EAVE,0), v3(0,EAVE,L), v3(RX,RIDGE,L), v3(RX,RIDGE,0),
-          36,5, 9, .11, v3(0,-1,0), M.roof, 15,.80,.10, shell);
-clothQuad(v3(RX,RIDGE,0), v3(RX,RIDGE,L), v3(W,EAVE,L), v3(W,EAVE,0),
-          36,5, 9, .11, v3(0,-1,0), M.roof, 15,.80,.10, shell);
+// Each slope is a grid whose ridge edge follows the peaks, with the canvas
+// sagging between the frames across the slope.
+function peakSlope(eaveX, mat, parent){
+  const nz = 96, nu = 8, pos=[], uv=[], idx=[];
+  for(let j=0;j<=nu;j++){
+    const t = j/nu;
+    for(let i=0;i<=nz;i++){
+      const z = (i/nz)*L;
+      const x = eaveX + (RX - eaveX)*t;
+      // taut at the poles, swagged between them
+      const sag = 0.19 * Math.sin(Math.PI*t) * (1 - 0.88*peakProfile(z));
+      const y = EAVE + (ridgeY(z) - EAVE)*t - sag;
+      pos.push(x,y,z);
+      uv.push((z/L)*15, t*0.8 + 0.1);
+    }
+  }
+  for(let j=0;j<nu;j++) for(let i=0;i<nz;i++){
+    const k = j*(nz+1)+i;
+    idx.push(k, k+1, k+nz+2,  k, k+nz+2, k+nz+1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+  g.setIndex(idx); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, mat); parent.add(m); return m;
+}
+peakSlope(0, M.roof, shell);
+peakSlope(W, M.roof, shell);
 function gable(z){
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-    0,EAVE,z,  W,EAVE,z,  RX,RIDGE,z ]),3));
+    0,EAVE,z,  W,EAVE,z,  RX,ridgeY(z),z ]),3));
   g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array([0,0, 3,0, 1.5,1]),2));
   g.computeVertexNormals();
   shell.add(new THREE.Mesh(g, M.roof));
@@ -1091,14 +1299,24 @@ valance(0.1, -0.09, W-0.1, -0.09, EAVE+.02, .30, M.canvas);
 valance(W-0.1, L+0.09, 0.1, L+0.09, EAVE+.02, .30, M.canvas);
 
 // ---- frame: trusses, ridge, purlins, guys ----------------------------
-const ridgeBeam = box(.16, .16, L+.3, M.frame, RX, RIDGE, L/2, tent);
+// ridge beam, following the peaks
+for(let z=0; z<L; z+=1.5)
+  strut(v3(RX,ridgeY(z)-.07,z), v3(RX,ridgeY(z+1.5)-.07,z+1.5), .07, M.frame, tent);
+// a pole under every peak, with a finial out through the canvas
+for(const pz of PEAKZ){
+  box(.12, ridgeY(pz)-EAVE+1.0, .12, M.frame, RX, (ridgeY(pz)+EAVE-1.0)/2 + .5, pz, tent);
+  const fin = mesh(G.sphere, M.frame, RX, ridgeY(pz)+.17, pz, tent); fin.scale.setScalar(.15);
+  box(.05,.30,.05, M.frame, RX, ridgeY(pz)+.33, pz, tent);
+  for(const sx of [-1,1])                                    // hip rafters off the point
+    strut(v3(RX, ridgeY(pz)-.05, pz), v3(RX + sx*(RX-0.1), EAVE, pz), .055, M.frame, tent);
+}
 for(let z=0; z<=L; z+=4){
   box(.13,EAVE,.13, M.frame, 0.06, EAVE/2, z, tent);
   box(.13,EAVE,.13, M.frame, W-0.06, EAVE/2, z, tent);
-  strut(v3(0.06,EAVE,z), v3(RX,RIDGE,z), .065, M.frame, tent);
-  strut(v3(W-0.06,EAVE,z), v3(RX,RIDGE,z), .065, M.frame, tent);
-  strut(v3(2.6,EAVE+0.72,z), v3(RX-0.2,RIDGE-0.1,z), .04, M.frame, tent);   // collar ties
-  strut(v3(W-2.6,EAVE+0.72,z), v3(RX+0.2,RIDGE-0.1,z), .04, M.frame, tent);
+  strut(v3(0.06,EAVE,z), v3(RX,ridgeY(z),z), .06, M.frame, tent);
+  strut(v3(W-0.06,EAVE,z), v3(RX,ridgeY(z),z), .06, M.frame, tent);
+  strut(v3(2.6,EAVE+0.55,z), v3(RX-0.2,ridgeY(z)-0.1,z), .038, M.frame, tent);
+  strut(v3(W-2.6,EAVE+0.55,z), v3(RX+0.2,ridgeY(z)-0.1,z), .038, M.frame, tent);
   // guy ropes out to pegs on the grass
   for(const [sx,dir] of [[0.06,-1],[W-0.06,1]]){
     strut(v3(sx,EAVE,z), v3(sx+dir*2.3, 0, z+rr(-.3,.3)), .018,
@@ -1107,9 +1325,12 @@ for(let z=0; z<=L; z+=4){
 }
 box(.12,.12,L, M.frame, 0.06, EAVE, L/2, tent);
 box(.12,.12,L, M.frame, W-0.06, EAVE, L/2, tent);
-for(const t of [0.45]){                                   // purlins along each slope
-  box(.09,.09,L, M.frame, RX*(1-t), EAVE+(RIDGE-EAVE)*t, L/2, tent);
-  box(.09,.09,L, M.frame, W-RX*(1-t), EAVE+(RIDGE-EAVE)*t, L/2, tent);
+for(const t of [0.46]){                                   // purlins, following the peaks
+  for(let z=0; z<L; z+=2){
+    const ya = EAVE + (ridgeY(z)-EAVE)*t, yb = EAVE + (ridgeY(z+2)-EAVE)*t;
+    strut(v3(RX*(1-t), ya, z),   v3(RX*(1-t), yb, z+2),   .045, M.frame, tent);
+    strut(v3(W-RX*(1-t), ya, z), v3(W-RX*(1-t), yb, z+2), .045, M.frame, tent);
+  }
 }
 // wall colliders — the canvas is soft but it is not a doorway
 addCollider(-0.3, 0.3, -0.4, L+0.4);
@@ -1202,7 +1423,7 @@ buntingRun(DX0-1.0, -2.1, DX1+1.0, -2.1, 2.45, 0.15);
 const rigMat = new THREE.MeshStandardMaterial({ color:0x23282c, roughness:.65, metalness:.3 });
 const rig = new THREE.Group(); world.add(rig);
 for(const z of [7, 13.5, 20, 26.5, 33]){
-  const yT = RIDGE - 1.25;
+  const yT = RIDGE_V + 0.55;
   strut(v3(1.2,yT,z), v3(W-1.2,yT,z), .055, rigMat, rig);          // the bar
   strut(v3(1.2,yT-.35,z), v3(W-1.2,yT-.35,z), .04, rigMat, rig);
   for(let i=0;i<5;i++){
@@ -1864,13 +2085,19 @@ const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rea
   const hole = new THREE.Path();
   hole.moveTo(AR, AY); hole.absarc(0, AY, AR, 0, Math.PI, false);
   s.holes.push(hole);
-  const wallMat = new THREE.MeshStandardMaterial({ color:0xf0ebdd, roughness:.8, side:THREE.DoubleSide });
+  const plank = texPlank(); plank.repeat.set(7, 3);
+  const wallMat = new THREE.MeshStandardMaterial({ map:plank, color:0xf4efe2,
+                                                   roughness:.9, side:THREE.DoubleSide });
   const wall = new THREE.Mesh(new THREE.ShapeGeometry(s), wallMat);
   wall.receiveShadow = true; rear.add(wall);
 
   // the sunburst: glass, radial bars, painted frame
-  const lightGlass = new THREE.MeshStandardMaterial({ color:0xeaf6fb, roughness:.1,
-    emissive:0xd8ecf6, emissiveIntensity:.55, transparent:true, opacity:.6, side:THREE.DoubleSide });
+  // warm amber glazing, as in the photographs — it is what the BAKE sign reads against
+  // In the photographs this is a backlit panel, not a window: opaque warm
+  // amber, which is what gives the BAKE letters something to read against.
+  const lightGlass = new THREE.MeshStandardMaterial({ color:0xc08c45, roughness:.62,
+    emissive:0x7d5420, emissiveIntensity:.3, side:THREE.DoubleSide });
+  lightGlass.userData.noEnv = true;     // or daylight washes it straight to white
   const glass = mesh(new THREE.CircleGeometry(AR-.03, 30, 0, Math.PI), lightGlass, 0, AY, .06, rear);
   const tealMat = new THREE.MeshStandardMaterial({ color:PAL.teal, roughness:.6 });
   const arc = mesh(new THREE.TorusGeometry(AR, .085, 8, 40, Math.PI), tealMat, 0, AY, .04, rear);
@@ -1902,8 +2129,135 @@ const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rea
     const cxp = -2.665 + i*1.7767;
     shadeOn(box(1.42,.045,.8, M.wood, cxp, .54, -.5, rear), false, true); // mid shelf
     for(let k=0;k<3;k++) pBowl(cxp-.44+k*.44, .59, -.5, rear, .16, i+k);
-    for(let k=0;k<3;k++) pBowl(cxp-.44+k*.44, .17, -.5, rear, .16, i+k+2);
+    if(i%2){
+      for(let k=0;k<3;k++) pBowl(cxp-.44+k*.44, .17, -.5, rear, .16, i+k+2);
+    } else {
+      const bc = new THREE.MeshStandardMaterial({ color:i?0xd8c84a:0x7aa84a, roughness:.6 });
+      for(let k=0;k<2;k++){
+        const bx2 = cxp-.3+k*.6;
+        for(let w2=0;w2<4;w2++){
+          box(.3,.014,.014, bc, bx2, .18+w2*.06, -.36, rear);
+          box(.3,.014,.014, bc, bx2, .18+w2*.06, -.64, rear);
+          box(.014,.014,.28, bc, bx2-.15, .18+w2*.06, -.5, rear);
+          box(.014,.014,.28, bc, bx2+.15, .18+w2*.06, -.5, rear);
+        }
+        for(let v2=0;v2<4;v2++){
+          const vx2 = bx2-.15+v2*.1;
+          box(.014,.20,.014, bc, vx2, .26, -.36, rear);
+          box(.014,.20,.014, bc, vx2, .26, -.64, rear);
+        }
+        box(.3,.014,.28, bc, bx2, .17, -.5, rear);
+      }
+    }
   }
+  // ---- the shelf across the arch, with the BAKE sign on it --------
+  shadeOn(box(6.6,.09,.34, M.wood, 0, AY-.04, -.19, rear), true, true);
+  for(const bx of [-2.9,0,2.9]) box(.1,.22,.3, tealMat, bx, AY-.15, -.19, rear);
+  const sign = mesh(G.plane, new THREE.MeshStandardMaterial({ map:texBakeSign(),
+    transparent:true, alphaTest:.45, roughness:.7, side:THREE.DoubleSide,
+    emissive:0xfff6e2, emissiveIntensity:.5 }), 0, AY+.30, -.26, rear);
+  sign.scale.set(2.05,.56,1);
+  sign.rotation.y = Math.PI;          // face the room, or the letters read backwards
+  const signBulb = new THREE.MeshStandardMaterial({ color:0xfff4d8,
+    emissive:0xffdc9e, emissiveIntensity:1.3, roughness:.35 });
+  for(let L2=0; L2<4; L2++){                                 // bulbs on the letters
+    const x0 = -0.78 + L2*0.52;
+    for(let k=0;k<7;k++){
+      const a = (k/7)*6.283;
+      const b = mesh(G.sphere, signBulb, x0 + Math.cos(a)*.17,
+                     AY+.30 + Math.sin(a)*.21, -.30, rear);
+      b.scale.setScalar(.044);
+    }
+  }
+  const signLight = new THREE.PointLight(0xffdca8, .2, 5, 2);
+  signLight.position.set(W/2, AY+.35, L-1.0); scene.add(signLight);
+
+  // ---- coloured glass mugs hanging on hooks under the shelf -------
+  const mugCols = [0x5aa06a,0x7d4f9e,0x3f7fb5,0xd1687f,0x56b3ab,0xc8452f,
+                   0xe0a53c,0x4a69b0,0x8fbf4a,0xc06098,0x3f9f8e,0xd4753a];
+  for(let i=0;i<12;i++){
+    const mx = -2.75 + i*0.5;
+    box(.02,.09,.02, M.chrome, mx, AY-.14, -.24, rear);
+    const mm = new THREE.MeshStandardMaterial({ color:mugCols[i], roughness:.14,
+      metalness:.05, transparent:true, opacity:.85 });
+    const mug = mesh(G.cyl, mm, mx, AY-.30, -.24, rear);
+    mug.scale.set(.15,.19,.15);
+    const h = mesh(G.torus, mm, mx+.1, AY-.30, -.24, rear);
+    h.scale.set(.13,.13,.05); h.rotation.y = Math.PI/2;
+  }
+
+  // ---- plates and framed prints on the panelling -------------------
+  const plateCols = [0xe8c84a,0x6fae5a,0x4f8fc0,0xd98aa0,0xdf8a46];
+  [[-5.2,3.5],[-4.4,2.9],[5.2,3.5],[4.4,2.9],[-5.6,2.1]].forEach((p,i)=>{
+    const pl = mesh(G.cyl, new THREE.MeshStandardMaterial({
+      color:plateCols[i%plateCols.length], roughness:.35 }), p[0], p[1], -.07, rear);
+    pl.scale.set(.52,.04,.52); pl.rotation.x = Math.PI/2;
+  });
+  for(const [fx,fy] of [[5.5,2.0],[-5.1,1.5],[5.0,1.4]]){
+    box(.56,.56,.05, new THREE.MeshStandardMaterial({color:0xf2efe4, roughness:.8}), fx, fy, -.06, rear);
+    for(let k=0;k<4;k++)
+      box(.21,.21,.02, new THREE.MeshStandardMaterial({
+        color:pick([0xd96a7a,0xe8c45a,0x6fae5a,0x4f8fc0,0xb389c4]), roughness:.7 }),
+        fx-.12+(k%2)*.24, fy-.12+((k/2)|0)*.24, -.10, rear);
+  }
+
+  // ---- union jack bunting across the back --------------------------
+  const ujMat = new THREE.MeshStandardMaterial({ map:texUnionFlag(), roughness:.85,
+                                                 side:THREE.DoubleSide });
+  for(const side of [-1,1]){
+    const x0 = side*2.6, x1 = side*6.4, n = 7;
+    const pts=[];
+    for(let i=0;i<=n;i++){
+      const t=i/n;
+      pts.push(v3(W/2 + x0+(x1-x0)*t, (AY+1.05) - Math.sin(Math.PI*((t*2)%1))*.16, L-0.95));
+    }
+    world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color:0xd9d2c0})));
+    for(let i=0;i<n;i++){
+      const f = new THREE.Mesh(flagGeo, ujMat);
+      f.position.copy(pts[i]).add(pts[i+1]).multiplyScalar(.5);
+      f.scale.setScalar(1.05); f.userData.p = rnd()*6.28;
+      world.add(f); BUNT.push(f);
+    }
+  }
+
+  // ---- a sink in the middle of the counter -------------------------
+  box(.62,.03,.5, M.steel, 0, 1.095, -.52, rear);
+  box(.5,.16,.38, M.steel, 0, 1.0, -.52, rear);
+  const rtap = mesh(G.cyl, M.chrome, 0, 1.30, -.24, rear); rtap.scale.set(.036,.40,.036);
+  const rsp = mesh(G.cyl, M.chrome, 0, 1.50, -.33, rear);
+  rsp.scale.set(.03,.22,.03); rsp.rotation.x = -Math.PI/2.1;
+
+  // ---- cakes, stands and flowers on the worktop --------------------
+  pStand(-2.1, 1.11, -.52, rear, 0);
+  pStand( 1.5, 1.11, -.52, rear, 3);
+  pStand( 2.6, 1.11, -.46, rear, 4);
+  { const g2 = new THREE.Group(); g2.position.set(-3.0, 1.11, -.5); rear.add(g2);
+    mesh(G.cyl, M.white, 0,.02,0,g2).scale.set(.28,.03,.28);
+    box(.03,.42,.03, M.chrome, 0,.22,0,g2);
+    for(let k=0;k<2;k++){
+      const pl = mesh(G.cyl, M.white, 0,.16+k*.26,0,g2);
+      pl.scale.set(.5-k*.14,.025,.5-k*.14);
+      for(let j=0;j<5;j++){
+        const a=(j/5)*6.28, r=.15-k*.04;
+        const cup = mesh(G.cyl, bowlMats[(j+k)%bowlMats.length],
+          Math.cos(a)*r, .19+k*.26, Math.sin(a)*r, g2);
+        cup.scale.set(.1,.07,.1);
+        const ic = mesh(G.sphere, cakeMats.cream, Math.cos(a)*r, .235+k*.26, Math.sin(a)*r, g2);
+        ic.scale.set(.11,.09,.11);
+      }
+    }
+  }
+  for(const [vx,vc] of [[-3.55,2],[3.5,4]]){
+    const v = mesh(G.cyl, bowlMats[vc], vx, 1.2, -.5, rear); v.scale.set(.24,.22,.24);
+    for(let i=0;i<9;i++){
+      const f = mesh(G.sphere, new THREE.MeshStandardMaterial({
+        color:pick([0xd96a7a,0xf0f0e4,0xe8c45a,0xc98ab4]), roughness:.8 }),
+        vx+rr(-.16,.16), 1.42+rr(0,.18), -.5+rr(-.16,.16), rear);
+      f.scale.setScalar(.055);
+    }
+  }
+
   // things on the counter: a mixer, a cake, the chalkboard
   makeMixer(-2.9, 1.09, -.6, rear, 0xe8d9a8);
   const chalk = box(1.5,.78,.06, M.chalk, 2.95, 1.5, -.1, rear);
@@ -2395,6 +2749,51 @@ function texIkat(){
   o.globalAlpha = 1;
   return finish(out,1,1);
 }
+function texHead(){
+  // Equirectangular: u=0.25 is dead ahead on the sphere, so the face goes
+  // there. Only about a quarter of the width is ever seen front-on, so the
+  // features have to be sized for that band, not for the whole canvas.
+  const c = cvs(256,128), g = c.getContext('2d');
+  g.fillStyle = '#e9bf94'; g.fillRect(0,0,256,128);
+  const grd = g.createLinearGradient(0,0,0,128);
+  grd.addColorStop(0,'rgba(196,150,114,.45)'); grd.addColorStop(.42,'rgba(255,230,206,0)');
+  grd.addColorStop(1,'rgba(176,126,96,.5)');
+  g.fillStyle = grd; g.fillRect(0,0,256,128);
+  const CX = 64;
+  g.fillStyle='rgba(206,142,118,.3)';                            // cheeks
+  g.beginPath(); g.ellipse(CX-24,70,14,9,0,0,6.3); g.fill();
+  g.beginPath(); g.ellipse(CX+24,70,14,9,0,0,6.3); g.fill();
+  g.fillStyle='rgba(188,138,112,.2)';                            // under the jaw
+  g.beginPath(); g.ellipse(CX,99,30,12,0,0,6.3); g.fill();
+  for(const ex of [CX-19, CX+19]){
+    g.save(); g.translate(ex,55);
+    g.fillStyle='#1a151c';                                       // kohl
+    g.beginPath(); g.ellipse(0,0,15.5,10.4,0,0,6.3); g.fill();
+    g.fillStyle='#f4f5f7';                                       // sclera
+    g.beginPath(); g.ellipse(0,1,11.8,7.0,0,0,6.3); g.fill();
+    g.fillStyle='#3a74a6'; g.beginPath(); g.arc(0,1,6.2,0,6.3); g.fill();
+    g.fillStyle='#2a567f'; g.beginPath(); g.arc(0,1,6.2,0.6,2.6); g.fill();
+    g.fillStyle='#14181e'; g.beginPath(); g.arc(0,1,2.9,0,6.3); g.fill();
+    g.fillStyle='#fff';   g.beginPath(); g.arc(-2.2,-1.5,1.8,0,6.3); g.fill();
+    g.strokeStyle='#1a151c'; g.lineWidth=3.2; g.lineCap='round'; // lash line
+    g.beginPath(); g.moveTo(-13,-4.6); g.quadraticCurveTo(0,-9.4,13,-4.0); g.stroke();
+    g.beginPath(); g.moveTo(12,-4.0); g.lineTo(18,-7.0); g.stroke();
+    g.restore();
+    g.strokeStyle='#17131a'; g.lineWidth=4.2; g.lineCap='round'; // brow
+    g.beginPath(); g.moveTo(ex-16,39); g.quadraticCurveTo(ex,33,ex+15,39.5); g.stroke();
+  }
+  g.strokeStyle='rgba(158,110,86,.45)'; g.lineWidth=2.4;         // nose
+  g.beginPath(); g.moveTo(CX+1.5,63); g.lineTo(CX-2,71); g.stroke();
+  g.fillStyle='rgba(150,104,80,.3)';
+  g.beginPath(); g.ellipse(CX,72.5,6.5,2.6,0,0,6.3); g.fill();
+  g.strokeStyle='#8c464a'; g.lineWidth=3.4; g.lineCap='round';   // mouth
+  g.beginPath(); g.moveTo(CX-13,78); g.quadraticCurveTo(CX,84,CX+13,77.5); g.stroke();
+  g.strokeStyle='rgba(206,136,128,.55)'; g.lineWidth=4.2;
+  g.beginPath(); g.moveTo(CX-9,81.5); g.quadraticCurveTo(CX,85.5,CX+9,81); g.stroke();
+  g.fillStyle='rgba(60,45,50,.09)';                              // a little stubble
+  for(let i=0;i<340;i++) g.fillRect(CX+rr(-1,1)*28, rr(80,100), 1.3, 1.3);
+  return finish(c,1,1);
+}
 function texFace(){
   const c = cvs(128,128), g = c.getContext('2d');
   g.fillStyle = '#edc49c'; g.fillRect(0,0,128,128);
@@ -2424,92 +2823,111 @@ function texFace(){
 
 function buildWalker(){
   const ikatTex = texIkat();
-  // BoxGeometry gives every face uv 0..1, so a shared texture would stretch
-  // differently on every panel. Give each piece its own repeat instead, sized
-  // so one medallion is about 7cm of cloth wherever it lands.
+  // Box faces always get uv 0..1, so a shared map would stretch differently on
+  // every panel. Each piece takes its own repeat, sized so one medallion is
+  // about 6cm of cloth wherever it lands.
   const MOTIF = 0.058;
   const ikatMat = (w,h) => {
     const t = ikatTex.clone(); t.needsUpdate = true;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.repeat.set(Math.max(.7, w/(MOTIF*3)), Math.max(.7, h/(MOTIF*3)));
-    return new THREE.MeshStandardMaterial({ map:t, color:0xcfc8c0, roughness:.9 });
+    return new THREE.MeshStandardMaterial({ color:0xcfc8c0, map:t, roughness:.9 });
   };
-  const skin = new THREE.MeshStandardMaterial({ color:0xedc49c, roughness:.76 });
-  const faceM = new THREE.MeshStandardMaterial({ map:texFace(), roughness:.76 });
+  const skin = new THREE.MeshStandardMaterial({ color:0xe9bf94, roughness:.78 });
+  const headM = new THREE.MeshStandardMaterial({ map:texHead(), roughness:.78 });
   const tee  = new THREE.MeshStandardMaterial({ color:0x15151a, roughness:.92 });
   const hair = new THREE.MeshStandardMaterial({ color:0x17141c, roughness:.96, flatShading:true });
   const boot = new THREE.MeshStandardMaterial({ color:0x121217, roughness:.7 });
+
+  // rounded limbs instead of blocks
+  const tube = (rT,rB,len,mat,parent,yTop,seg) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(rT,rB,len,seg||10), mat);
+    m.position.y = yTop - len/2; parent.add(m);
+    return shadeOn(m, true, false);
+  };
 
   const root  = new THREE.Group(); world.add(root);
   const body  = new THREE.Group(); body.position.y = 1.015; root.add(body);
   const torso = new THREE.Group(); body.add(torso);
 
-  // --- torso: black roll-neck, jacket hanging open over it ---
-  shadeOn(box(.38,.50,.23, tee, 0,.25,0, torso), true, false);
-  shadeOn(box(.33,.13,.22, tee, 0,.515,0, torso), true, false);          // roll neck
-  shadeOn(box(.44,.52,.075, ikatMat(.44,.52), 0,.25,-.125, torso), true, false);
-  for(const sx of [-1,1]){
-    const p = box(.19,.52,.07, ikatMat(.19,.52), sx*.115,.25,.112, torso);
-    p.rotation.y = -sx*.10; shadeOn(p,true,false);                       // open front
-    shadeOn(box(.07,.52,.225, ikatMat(.225,.52), sx*.20,.25,0, torso), true, false);
-    const lap = box(.06,.30,.05, ikatMat(.06,.30), sx*.055,.37,.145, torso);
-    lap.rotation.z = sx*.22; lap.rotation.y = -sx*.3;                    // lapel
+  // --- torso: an oval barrel in a black roll-neck ---
+  const trunk = tube(.185,.165,.50, tee, torso, .50, 14);
+  trunk.scale.z = .66;
+  const collar = tube(.115,.105,.14, tee, torso, .575, 12); collar.scale.z = .85;
+  // the jacket is a shell wrapped round the back, left open at the front
+  const coat = new THREE.Mesh(new THREE.CylinderGeometry(.212,.198,.53,18,1,true,
+                                                         0.62, Math.PI*2 - 1.24), ikatMat(.9,.53));
+  coat.position.y = .255; coat.scale.z = .70;
+  coat.material.side = THREE.DoubleSide; shadeOn(coat,true,false); torso.add(coat);
+  for(const sx of [-1,1]){                              // lapels falling open
+    const lap = new THREE.Mesh(new THREE.CylinderGeometry(.205,.195,.46,6,1,true,
+      sx>0 ? 0.10 : Math.PI*2-0.66, 0.56), ikatMat(.3,.46));
+    lap.position.y = .29; lap.scale.z = .70;
+    lap.material.side = THREE.DoubleSide; torso.add(lap);
   }
-  shadeOn(box(.43,.06,.24, ikatMat(.43,.24), 0,.52,0, torso), true, false);  // shoulders
+  const yoke = tube(.215,.205,.06, ikatMat(.45,.1), torso, .545, 16); yoke.scale.z = .70;
 
   // --- head ---
   const neck = new THREE.Group(); neck.position.y = .50; torso.add(neck);
-  box(.105,.09,.105, skin, 0,.045,0, neck);
-  const head = new THREE.Group(); head.position.y = .09; neck.add(head);
-  const skull = new THREE.Mesh(G.unit, [skin,skin,skin,skin,faceM,skin]);
-  skull.scale.set(.205,.255,.205); skull.position.y = .125;
+  tube(.055,.062,.10, skin, neck, .10, 8);
+  const head = new THREE.Group(); head.position.y = .095; neck.add(head);
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(.5, 20, 14), headM);
+  skull.scale.set(.228,.272,.238); skull.position.y = .125;
   shadeOn(skull,true,false); head.add(skull);
 
-  // shaggy layered hair: lots of small angular shards, not one helmet
+  // shaggy layered hair
   const shard = (x,y,z, w,h,d, rx,ry,rz) => {
     const m = box(w,h,d, hair, x,y,z, head);
     m.rotation.set(rx,ry,rz); shadeOn(m,true,false); return m;
   };
-  for(let i=0;i<9;i++){                                    // crown, spiking up
-    const a2 = (i/9)*Math.PI*2;
+  for(let i=0;i<10;i++){                                // crown
+    const a2 = (i/10)*Math.PI*2;
     shard(Math.cos(a2)*.085, .255+rr(0,.05), Math.sin(a2)*.085 - .02,
           .095, rr(.11,.19), .085, rr(-.35,.1), a2, Math.cos(a2)*.5);
   }
-  for(let i=0;i<7;i++){                                    // fringe, kept off the eyes
+  for(let i=0;i<7;i++){                                 // fringe, clear of the eyes
     const t = (i/6 - .5)*2;
-    shard(t*.105, .252 - Math.abs(t)*.018, .098,
+    shard(t*.105, .255 - Math.abs(t)*.018, .10,
           .062, rr(.10,.15), .045, .26+rr(-.08,.08), t*.45, t*.55);
   }
-  for(const sx of [-1,1]) for(let i=0;i<6;i++){            // falling at the sides
-    shard(sx*(.118+rr(0,.03)), .15-i*.05, -.07+i*.016,
+  for(const sx of [-1,1]) for(let i=0;i<6;i++){         // falling at the sides
+    shard(sx*(.12+rr(0,.03)), .15-i*.05, -.07+i*.016,
           .055, rr(.20,.30), .075, rr(-.15,.15), sx*rr(.1,.5), sx*(.10+i*.05));
   }
-  for(let i=0;i<7;i++){                                    // down the back
-    shard(-.09+i*.03, .13-rr(0,.07), -.115,
+  for(let i=0;i<7;i++){                                 // down the back
+    shard(-.09+i*.03, .13-rr(0,.07), -.12,
           .06, rr(.22,.32), .055, -.14+rr(-.1,.1), rr(-.4,.4), rr(-.25,.25));
   }
 
   // --- arms ---
   function arm(side){
-    const sh = new THREE.Group(); sh.position.set(side*.232,.44,0); torso.add(sh);
-    shadeOn(box(.11,.30,.12, ikatMat(.12,.30), 0,-.15,0, sh), true, false);
+    const sh = new THREE.Group(); sh.position.set(side*.218,.44,0); torso.add(sh);
+    mesh(G.sphere, ikatMat(.14,.14), 0,0,0, sh).scale.setScalar(.125);   // shoulder cap
+    tube(.062,.052,.30, ikatMat(.13,.30), sh, 0, 10);
     const el = new THREE.Group(); el.position.y = -.30; sh.add(el);
-    shadeOn(box(.10,.27,.105, ikatMat(.11,.27), 0,-.135,0, el), true, false);
-    box(.085,.115,.08, skin, 0,-.315,.012, el);
+    mesh(G.sphere, ikatMat(.1,.1), 0,0,0, el).scale.setScalar(.098);     // elbow
+    tube(.05,.042,.27, ikatMat(.11,.27), el, 0, 10);
+    const hand = mesh(G.sphere, skin, 0,-.305,.006, el);
+    hand.scale.set(.046,.062,.035);
     return { sh, el };
   }
   const armL = arm(1), armR = arm(-1);
 
   // --- legs ---
   function leg(side){
-    const hip = new THREE.Group(); hip.position.set(side*.108,0,0); body.add(hip);
-    shadeOn(box(.175,.43,.185, ikatMat(.18,.43), 0,-.215,0, hip), true, false);
+    const hip = new THREE.Group(); hip.position.set(side*.102,0,0); body.add(hip);
+    mesh(G.sphere, ikatMat(.2,.2), 0,0,0, hip).scale.setScalar(.185);
+    tube(.098,.082,.43, ikatMat(.19,.43), hip, 0, 10);
     const kn = new THREE.Group(); kn.position.y = -.43; hip.add(kn);
-    shadeOn(box(.155,.43,.16, ikatMat(.16,.43), 0,-.215,0, kn), true, false);
+    mesh(G.sphere, ikatMat(.16,.16), 0,0,0, kn).scale.setScalar(.15);
+    tube(.079,.062,.43, ikatMat(.16,.43), kn, 0, 10);
     const an = new THREE.Group(); an.position.y = -.43; kn.add(an);
-    shadeOn(box(.16,.125,.175, boot, 0,-.063,0, an), true, false);
-    shadeOn(box(.16,.09,.13, boot, 0,-.085,.115, an), true, false);
-    box(.17,.032,.3, boot, 0,-.122,.04, an);
+    const bt = tube(.082,.077,.12, boot, an, 0, 10);                      // ankle boot
+    const toe = mesh(G.sphere, boot, 0,-.085,.085, an);
+    toe.scale.set(.078,.052,.115);
+    shadeOn(toe,true,false);
+    const sole = mesh(new THREE.CylinderGeometry(.088,.086,.035,10), boot);
+    sole.position.set(0,-.122,.035); sole.scale.z = 2.3; an.add(sole);
     return { hip, kn, an };
   }
   const legL = leg(1), legR = leg(-1);
@@ -2543,9 +2961,30 @@ const SAY = [
   "There's a man outside with a lens. Don't look directly at him.",
   'Somebody has used my good piping nozzle as a trumpet.',
   'I like this bench. It has an energy.',
-  "If anyone asks, the custard was always meant to be that colour.",
-  'Forty minutes left. That is both a long time and no time at all.'
+  'If anyone asks, the custard was always meant to be that colour.',
+  'Forty minutes left. That is both a long time and no time at all.',
+  'I have been told not to touch anything. So far, so good.',
+  'That meringue has the confidence of something much larger.',
+  'Do you ever look at a flapjack and feel genuinely unsettled?',
+  'The jam is setting. The jam is thinking about it, anyway.',
+  "I've named the stand mixers. That one is Deborah.",
+  'Somewhere in this tent there is a bowl nobody has claimed.',
+  'A good crumb is a kind of weather.',
+  'I was going to help, and then I remembered what happened last time.',
+  'The oven on bench four runs hot. It has opinions.',
+  'Nobody tell me what the technical is. I want to be surprised.',
+  'There are twelve kinds of sugar in that pantry. Twelve.',
+  'That is either a brioche or a very relaxed hat.',
+  'I came in for a cup of tea about an hour ago.',
+  'The bunting is new. Pretend you noticed.',
+  'If the fondant goes wrong we simply call it abstract.',
+  'Somebody is caramelising. I can hear it happening.',
+  'I would judge, but I have no qualifications and strong feelings.',
+  'The ducks on the pond get the offcuts. They expect it now.',
+  'This is the calmest the tent will be all day.',
+  'Behind every showstopper is a bin nobody mentions.'
 ];
+
 let sayN = (rnd()*SAY.length)|0;
 const noelProp = { x:NOEL.pos.x, z:NOEL.pos.z, r:1.7, label:'Noel', found:false,
   verb(){ return 'Say hello to'; },
@@ -2858,6 +3297,19 @@ function animate(dt){
     }
   }
   if(NOEL) updateWalker(NOEL, dt);
+  if(pondWater && pondWater.bumpMap){
+    pondWater.bumpMap.offset.x = clock * 0.006;
+    pondWater.bumpMap.offset.y = Math.sin(clock*0.11) * 0.02;
+  }
+  for(const d of DUCKS){
+    d.a += d.sp * dt;
+    const x = d.px + Math.cos(d.a) * d.pr * d.r;
+    const z = d.pz + Math.sin(d.a) * d.pb * d.r;
+    d.g.position.set(x, 0.12 + Math.sin(clock*1.1 + d.ph)*0.025, z);
+    d.g.rotation.y = Math.atan2(-Math.sin(d.a)*d.pr, Math.cos(d.a)*d.pb) * Math.sign(d.sp)
+                   + (d.sp > 0 ? 0 : Math.PI);
+    d.g.rotation.z = Math.sin(clock*0.9 + d.ph)*0.05;
+  }
   // a live camera keeps you in frame
   for(const c of CAMERAS){
     const want = c.on ? Math.atan2(-(player.pos.x - c.x), -(player.pos.z - c.z)) - c.base : 0;
