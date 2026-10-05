@@ -187,7 +187,7 @@ const W = 18, L = 36;                 // tent footprint: x 0..18, z 0..36
 const EAVE = 3.2;                     // side-wall height
 // The real marquee is a peaked "Capri" frame: four pagoda points along the
 // ridge, with the canvas falling away to a valley where the bays meet.
-const PEAKS = 4, RIDGE_V = EAVE + 1.1, RIDGE = EAVE + 4.05;
+const PEAKS = 4, RIDGE_V = EAVE + 1.5, RIDGE = EAVE + 4.05;
 // 1 at a peak, 0 where two bays meet. The exponent below 1 gives the slightly
 // swept, concave rise of tensioned canvas rather than a dome.
 function peakProfile(z){
@@ -195,6 +195,13 @@ function peakProfile(z){
   return Math.pow(1 - Math.abs(2*f - 1), 0.80);
 }
 function ridgeY(z){ return RIDGE_V + (RIDGE - RIDGE_V) * peakProfile(z); }
+// The exact height of the roof canvas at any point. Every frame member is
+// placed from this and hung below it, so nothing can poke through the cloth.
+function canopyY(x, z){
+  const t = 1 - Math.abs(x - W/2) / (W/2);          // 0 at the eave, 1 at the ridge
+  const sag = 0.19 * Math.sin(Math.PI*t) * (1 - 0.88*peakProfile(z));
+  return EAVE + (ridgeY(z) - EAVE)*t - sag;
+}
 const PEAKZ = [];                     // where the poles stand
 for(let i=0;i<PEAKS;i++) PEAKZ.push((i + 0.5) * L / PEAKS);
 const DX0 = 7.1, DX1 = 10.9;          // entrance gap in the front wall
@@ -344,12 +351,12 @@ function paintCanvas(bump){
 function texFabric(){ return paintCanvas(false); }
 function texGrass(){
   const c = cvs(512,512), g = c.getContext('2d');
-  g.fillStyle='#71944f'; g.fillRect(0,0,512,512);
-  for(let i=0;i<160;i++){                                   // mown stripes + patches
-    g.fillStyle='rgba('+(90+rr(-18,22)|0)+','+(130+rr(-20,26)|0)+','+(68+rr(-16,20)|0)+',.35)';
-    g.beginPath(); g.ellipse(rnd()*512,rnd()*512,rr(20,90),rr(14,60),rnd()*3,0,6.3); g.fill();
+  g.fillStyle='#5f8544'; g.fillRect(0,0,512,512);
+  for(let i=0;i<230;i++){                                   // tonal drift across the sward
+    g.fillStyle='rgba('+(82+rr(-16,26)|0)+','+(118+rr(-18,30)|0)+','+(62+rr(-14,22)|0)+',.32)';
+    g.beginPath(); g.ellipse(rnd()*512,rnd()*512,rr(16,80),rr(12,54),rnd()*3,0,6.3); g.fill();
   }
-  for(let i=0;i<5200;i++){                                  // blades
+  for(let i=0;i<8200;i++){                                  // blades
     const x=rnd()*512,y=rnd()*512,h=rr(2,7);
     g.strokeStyle='rgba('+(96+rr(-26,46)|0)+','+(142+rr(-30,52)|0)+','+(66+rr(-20,34)|0)+',.75)';
     g.lineWidth=rr(.7,1.5); g.beginPath(); g.moveTo(x,y); g.lineTo(x+rr(-1.6,1.6), y-h); g.stroke();
@@ -358,9 +365,9 @@ function texGrass(){
     g.fillStyle = rnd()<.55 ? 'rgba(248,246,232,.9)' : 'rgba(246,214,88,.85)';
     g.beginPath(); g.arc(rnd()*512, rnd()*512, rr(1.3,2.6), 0, 6.3); g.fill();
   }
-  // the mower stripes: eight bands per tile, so roughly 1.2m on the ground
+  // the mower stripes: present, but you should have to look for them
   for(let i=0;i<8;i++){
-    g.fillStyle = i%2 ? 'rgba(236,246,214,.17)' : 'rgba(44,74,36,.13)';
+    g.fillStyle = i%2 ? 'rgba(228,240,206,.065)' : 'rgba(46,72,38,.055)';
     g.fillRect(0, i*64, 512, 64);
   }
   return finish(c, 1, 1);
@@ -607,14 +614,15 @@ const M = {
   // all read straight through the walls — you are inside a lit lantern
   canvas: new THREE.MeshStandardMaterial({
             map:T.fabric, bumpMap:T.fabricBump, bumpScale:.035,
-            color:0xf7f6f1, roughness:.95, side:THREE.DoubleSide,
-            transparent:true, opacity:.94, emissive:0xdfe8ee, emissiveIntensity:.24 }),
+            color:0xf3f1ea, roughness:.96, side:THREE.DoubleSide,
+            emissive:0xdfe8ee, emissiveIntensity:.26 }),
+  // opaque: you should never see sky or trees through the roof of a marquee
   roof:   new THREE.MeshStandardMaterial({
-            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.045,
-            color:0xf9f8f3, roughness:.96, side:THREE.DoubleSide,
-            transparent:true, opacity:.90, emissive:0xe9f1f6, emissiveIntensity:.32 }),
+            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.04,
+            color:0xf6f4ee, roughness:.97, side:THREE.DoubleSide,
+            emissive:0xe4edf3, emissiveIntensity:.40 }),
   clear:  new THREE.MeshPhysicalMaterial({
-            color:0xdfeef2, roughness:.08, metalness:0, transparent:true, opacity:.22,
+            color:0xcfe0e6, roughness:.12, metalness:.08, transparent:true, opacity:.42,
             side:THREE.DoubleSide }),
   frame:  new THREE.MeshStandardMaterial({ color:0xdfe3e4, roughness:.42, metalness:.55 }),
   steel:  new THREE.MeshStandardMaterial({ color:0xd6dadc, roughness:.38, metalness:.55 }),
@@ -628,6 +636,7 @@ const M = {
   leafA:  new THREE.MeshStandardMaterial({ color:0x4f7a3c, roughness:1, flatShading:true }),
   leafB:  new THREE.MeshStandardMaterial({ color:0x5f8a42, roughness:1, flatShading:true }),
   leafC:  new THREE.MeshStandardMaterial({ color:0x426b36, roughness:1, flatShading:true }),
+  leafD:  new THREE.MeshStandardMaterial({ color:0x6f9a4a, roughness:1, flatShading:true }),
   hedge:  new THREE.MeshStandardMaterial({ color:0x44632f, roughness:1, flatShading:true }),
   chalk:  new THREE.MeshStandardMaterial({ map:T.chalk, roughness:.9 }),
   // "glow rather than reflect" — lamps, the fanlight, the oven interiors
@@ -821,14 +830,21 @@ function treeAt(x, z, s, kind){
       const a = rr(0,6.28), lim = box(.2*s, 1.6*s, .2*s, M.bark, Math.cos(a)*.5*s, th*0.86, Math.sin(a)*.5*s, g);
       lim.rotation.z = Math.cos(a)*0.5; lim.rotation.x = -Math.sin(a)*0.5;
     }
-    const lobes = near ? (kind==='beech' ? 4 : 3) : 2;   // distant trees stay cheap
+    // a crown built from many smaller overlapping lobes reads as foliage;
+    // three big ones read as cut gemstones
+    const lobes = near ? (kind==='beech' ? 9 : 8) : 3;
+    const spread = kind==='beech' ? 1.6 : 2.0;
     for(let i=0;i<lobes;i++){
-      const r = rr(1.9,3.1)*s;
-      const c = mesh(leafGeo, pick([M.leafA, M.leafB, M.leafC]),
-        rr(-1.5,1.5)*s, th + rr(0.2,1.9)*s, rr(-1.5,1.5)*s, g);
-      c.scale.set(r*2, r*1.7, r*2);
+      const u = i/lobes, ring = i < lobes*0.55;
+      const a = u*6.283*2.4 + rnd();
+      const rad = ring ? rr(.55,1.0)*spread*s : rr(0,.45)*spread*s;
+      const hy  = ring ? rr(.15,.95)*s : rr(.9,1.9)*s;
+      const r = (ring ? rr(1.05,1.6) : rr(1.2,1.9)) * s;
+      const c = mesh(leafGeo, pick([M.leafA, M.leafB, M.leafC, M.leafD]),
+        Math.cos(a)*rad, th + hy, Math.sin(a)*rad, g);
+      c.scale.set(r*2, r*rr(1.3,1.8), r*2);
       c.rotation.set(rnd()*3, rnd()*3, rnd()*3);
-      shadeOn(c, near, false);
+      shadeOn(c, near && i < 5, false);
     }
   }
   g.userData.sway = rr(0.4, 0.9);
@@ -1105,23 +1121,6 @@ let pondWater = null;
   }
 })();
 
-// ---- a picket fence along the lawn, as at the real thing --------------
-(function pickets(){
-  const wm = new THREE.MeshStandardMaterial({ color:0xf2f0e8, roughness:.85 });
-  const run = (x0,x1,z) => {
-    for(let x=x0; x<=x1; x+=0.60){
-      box(.085,.95,.035, wm, x, .47, z, world);
-      mesh(G.cone, wm, x, .99, z, world).scale.set(.085,.11,.035);
-    }
-    box(x1-x0,.06,.05, wm, (x0+x1)/2,.72,z, world);
-    box(x1-x0,.06,.05, wm, (x0+x1)/2,.28,z, world);
-    for(let x=x0; x<=x1; x+=3.2) box(.1,1.05,.09, wm, x,.52,z, world);
-    addCollider(x0-.1, x1+.1, z-.12, z+.12);
-  };
-  run(-9.5, 4.2, -3.6);
-  run(13.8, 27.5, -3.6);
-})();
-
 // ---- birds ----------------------------------------------------------
 const birds = [];
 const birdMat = new THREE.MeshBasicMaterial({ color:0x4a5560, side:THREE.DoubleSide, fog:false });
@@ -1222,7 +1221,7 @@ for(const [x,z,w,d] of [[W/2,-0.06,W+0.3,0.3],[W/2,L+0.06,W+0.3,0.3],
 }
 
 // ---- walls: canvas below, clear window band above --------------------
-const WIN0 = 1.15, WIN1 = 2.85;         // window band
+const WIN0 = 1.30, WIN1 = 2.62;         // window band
 function sideWall(x, flip){
   const out = v3(-flip, 0, 0);                       // bulge away from the inside
   clothQuad(v3(x,0,0), v3(x,0,L), v3(x,WIN0,L), v3(x,WIN0,0),
@@ -1264,10 +1263,7 @@ function peakSlope(eaveX, mat, parent){
     for(let i=0;i<=nz;i++){
       const z = (i/nz)*L;
       const x = eaveX + (RX - eaveX)*t;
-      // taut at the poles, swagged between them
-      const sag = 0.19 * Math.sin(Math.PI*t) * (1 - 0.88*peakProfile(z));
-      const y = EAVE + (ridgeY(z) - EAVE)*t - sag;
-      pos.push(x,y,z);
+      pos.push(x, canopyY(x, z), z);
       uv.push((z/L)*15, t*0.8 + 0.1);
     }
   }
@@ -1299,24 +1295,36 @@ valance(0.1, -0.09, W-0.1, -0.09, EAVE+.02, .30, M.canvas);
 valance(W-0.1, L+0.09, 0.1, L+0.09, EAVE+.02, .30, M.canvas);
 
 // ---- frame: trusses, ridge, purlins, guys ----------------------------
-// ridge beam, following the peaks
-for(let z=0; z<L; z+=1.5)
-  strut(v3(RX,ridgeY(z)-.07,z), v3(RX,ridgeY(z+1.5)-.07,z+1.5), .07, M.frame, tent);
-// a pole under every peak, with a finial out through the canvas
+// A member that follows the cloth: sampled along its run and hung a fixed
+// distance underneath, so it is always inside the tent.
+function curvedMember(x0,z0, x1,z1, drop, r, mat, parent){
+  const n = Math.max(3, Math.round(Math.hypot(x1-x0, z1-z0) / 1.5));
+  let prev = null;
+  for(let i=0;i<=n;i++){
+    const t = i/n, x = x0+(x1-x0)*t, z = z0+(z1-z0)*t;
+    const p = v3(x, canopyY(x,z) - drop, z);
+    if(prev) strut(prev, p, r, mat, parent);
+    prev = p;
+  }
+}
+// ridge beam
+curvedMember(RX, 0, RX, L, .10, .07, M.frame, tent);
+// A Capri frame carries its peaks on the perimeter and the rafters — there
+// are no poles standing on the floor. Just a short king post up in the roof.
 for(const pz of PEAKZ){
-  box(.12, ridgeY(pz)-EAVE+1.0, .12, M.frame, RX, (ridgeY(pz)+EAVE-1.0)/2 + .5, pz, tent);
-  const fin = mesh(G.sphere, M.frame, RX, ridgeY(pz)+.17, pz, tent); fin.scale.setScalar(.15);
-  box(.05,.30,.05, M.frame, RX, ridgeY(pz)+.33, pz, tent);
-  for(const sx of [-1,1])                                    // hip rafters off the point
-    strut(v3(RX, ridgeY(pz)-.05, pz), v3(RX + sx*(RX-0.1), EAVE, pz), .055, M.frame, tent);
+  const top = canopyY(RX, pz) - .08, foot = EAVE + 0.55;
+  box(.10, top - foot, .10, M.frame, RX, (top + foot)/2, pz, tent);
+  const cap = mesh(G.cyl, M.frame, RX, top - .04, pz, tent); cap.scale.set(.26,.09,.26);
+  for(const sx of [-1,1])                       // short braces off the king post
+    curvedMember(RX + sx*0.1, pz, RX + sx*2.6, pz, .45, .03, M.frame, tent);
 }
 for(let z=0; z<=L; z+=4){
   box(.13,EAVE,.13, M.frame, 0.06, EAVE/2, z, tent);
   box(.13,EAVE,.13, M.frame, W-0.06, EAVE/2, z, tent);
-  strut(v3(0.06,EAVE,z), v3(RX,ridgeY(z),z), .06, M.frame, tent);
-  strut(v3(W-0.06,EAVE,z), v3(RX,ridgeY(z),z), .06, M.frame, tent);
-  strut(v3(2.6,EAVE+0.55,z), v3(RX-0.2,ridgeY(z)-0.1,z), .038, M.frame, tent);
-  strut(v3(W-2.6,EAVE+0.55,z), v3(RX+0.2,ridgeY(z)-0.1,z), .038, M.frame, tent);
+  curvedMember(0.10, z, RX, z, .09, .055, M.frame, tent);        // rafters
+  curvedMember(W-0.10, z, RX, z, .09, .055, M.frame, tent);
+  curvedMember(2.6, z, RX-0.3, z, .34, .034, M.frame, tent);     // collar ties
+  curvedMember(W-2.6, z, RX+0.3, z, .34, .034, M.frame, tent);
   // guy ropes out to pegs on the grass
   for(const [sx,dir] of [[0.06,-1],[W-0.06,1]]){
     strut(v3(sx,EAVE,z), v3(sx+dir*2.3, 0, z+rr(-.3,.3)), .018,
@@ -1325,12 +1333,8 @@ for(let z=0; z<=L; z+=4){
 }
 box(.12,.12,L, M.frame, 0.06, EAVE, L/2, tent);
 box(.12,.12,L, M.frame, W-0.06, EAVE, L/2, tent);
-for(const t of [0.46]){                                   // purlins, following the peaks
-  for(let z=0; z<L; z+=2){
-    const ya = EAVE + (ridgeY(z)-EAVE)*t, yb = EAVE + (ridgeY(z+2)-EAVE)*t;
-    strut(v3(RX*(1-t), ya, z),   v3(RX*(1-t), yb, z+2),   .045, M.frame, tent);
-    strut(v3(W-RX*(1-t), ya, z), v3(W-RX*(1-t), yb, z+2), .045, M.frame, tent);
-  }
+for(const px of [RX*0.52, W-RX*0.52]) {                   // purlins, under the cloth
+  curvedMember(px, 0, px, L, .10, .042, M.frame, tent);
 }
 // wall colliders — the canvas is soft but it is not a doorway
 addCollider(-0.3, 0.3, -0.4, L+0.4);
@@ -1422,15 +1426,16 @@ buntingRun(DX0-1.0, -2.1, DX1+1.0, -2.1, 2.45, 0.15);
 /* ------------------------------------------------------------------ */
 const rigMat = new THREE.MeshStandardMaterial({ color:0x23282c, roughness:.65, metalness:.3 });
 const rig = new THREE.Group(); world.add(rig);
-for(const z of [7, 13.5, 20, 26.5, 33]){
-  const yT = RIDGE_V + 0.55;
-  strut(v3(1.2,yT,z), v3(W-1.2,yT,z), .055, rigMat, rig);          // the bar
-  strut(v3(1.2,yT-.35,z), v3(W-1.2,yT-.35,z), .04, rigMat, rig);
+for(const z of PEAKZ){
+  // hang from the lowest point of the cloth across the bar's own span
+  const yT = Math.min(canopyY(2.4, z), canopyY(W-2.4, z)) - 0.42;
+  strut(v3(2.4,yT,z), v3(W-2.4,yT,z), .05, rigMat, rig);           // the bar
+  strut(v3(2.4,yT-.30,z), v3(W-2.4,yT-.30,z), .036, rigMat, rig);
   for(let i=0;i<5;i++){
-    strut(v3(1.2+i*3.9, yT, z), v3(1.2+(i+.5)*3.9, yT-.35, z), .03, rigMat, rig);
+    strut(v3(2.4+i*2.64, yT, z), v3(2.4+(i+.5)*2.64, yT-.30, z), .026, rigMat, rig);
   }
-  for(const x of [3.2, 6.4, 9, 11.6, 14.8]){                        // lamps
-    const g = new THREE.Group(); g.position.set(x, yT-0.42, z); rig.add(g);
+  for(const x of [3.6, 6.3, 9, 11.7, 14.4]){                        // lamps
+    const g = new THREE.Group(); g.position.set(x, yT-0.38, z); rig.add(g);
     g.rotation.x = 0.0;
     box(.3,.3,.42, rigMat, 0,-.08,0, g);
     box(.34,.34,.06, rigMat, 0,-.08,.23, g);
@@ -2079,7 +2084,7 @@ ROWZ.forEach((z,i)=>{
 /* ------------------------------------------------------------------ */
 const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rear);
 {
-  const HW = 6.5, HH = 4.9, AR = 2.35, AY = 2.62;
+  const HW = 5.3, HH = 3.45, AR = 1.25, AY = 2.05;
   const s = new THREE.Shape();
   s.moveTo(-HW,0); s.lineTo(HW,0); s.lineTo(HW,HH); s.lineTo(-HW,HH); s.lineTo(-HW,0);
   const hole = new THREE.Path();
@@ -2109,9 +2114,9 @@ const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rea
   box(AR*2+.3, .14, .16, tealMat, 0, AY-.03, .04, rear);          // sill
   box(HW*2, .18, .2, tealMat, 0, HH-.08, .05, rear);              // cornice
   // dark backsplash under the arch
-  const splash = box(AR*2+.2, AY-1.05, .04, new THREE.MeshStandardMaterial({color:0x3c4a43, roughness:.85}),
-    0, 1.05 + (AY-1.05)/2, .03, rear);
-  for(let i=0;i<9;i++) pJar(-2.0+i*.5, 1.12, .12, rear, rr(.14,.24));
+  const splash = box(AR*2+.9, AY-1.05, .04, new THREE.MeshStandardMaterial({color:0x3c4a43, roughness:.85}),
+    0, 1.05 + (AY-1.05)/2, -.04, rear);
+  for(let i=0;i<9;i++) pJar(-1.05+i*.26, 1.12, -.16, rear, rr(.1,.17));
 
   // central display counter with open cubbies
   const cab = new THREE.MeshStandardMaterial({ map:texPanel(PAL.teal, 4), roughness:.55 });
@@ -2151,32 +2156,32 @@ const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rea
     }
   }
   // ---- the shelf across the arch, with the BAKE sign on it --------
-  shadeOn(box(6.6,.09,.34, M.wood, 0, AY-.04, -.19, rear), true, true);
-  for(const bx of [-2.9,0,2.9]) box(.1,.22,.3, tealMat, bx, AY-.15, -.19, rear);
+  shadeOn(box(6.2,.09,.32, M.wood, 0, AY-.05, -.19, rear), true, true);
+  for(const bx of [-2.7,0,2.7]) box(.1,.2,.28, tealMat, bx, AY-.16, -.19, rear);
   const sign = mesh(G.plane, new THREE.MeshStandardMaterial({ map:texBakeSign(),
     transparent:true, alphaTest:.45, roughness:.7, side:THREE.DoubleSide,
-    emissive:0xfff6e2, emissiveIntensity:.5 }), 0, AY+.30, -.26, rear);
-  sign.scale.set(2.05,.56,1);
+    emissive:0xfff6e2, emissiveIntensity:.5 }), 0, AY+.28, -.26, rear);
+  sign.scale.set(1.52,.42,1);
   sign.rotation.y = Math.PI;          // face the room, or the letters read backwards
   const signBulb = new THREE.MeshStandardMaterial({ color:0xfff4d8,
     emissive:0xffdc9e, emissiveIntensity:1.3, roughness:.35 });
   for(let L2=0; L2<4; L2++){                                 // bulbs on the letters
-    const x0 = -0.78 + L2*0.52;
-    for(let k=0;k<7;k++){
-      const a = (k/7)*6.283;
-      const b = mesh(G.sphere, signBulb, x0 + Math.cos(a)*.17,
-                     AY+.30 + Math.sin(a)*.21, -.30, rear);
-      b.scale.setScalar(.044);
+    const x0 = -0.57 + L2*0.38;
+    for(let k=0;k<6;k++){
+      const a = (k/6)*6.283;
+      const b = mesh(G.sphere, signBulb, x0 + Math.cos(a)*.125,
+                     AY+.28 + Math.sin(a)*.155, -.30, rear);
+      b.scale.setScalar(.034);
     }
   }
   const signLight = new THREE.PointLight(0xffdca8, .2, 5, 2);
-  signLight.position.set(W/2, AY+.35, L-1.0); scene.add(signLight);
+  signLight.position.set(W/2, AY+.32, L-1.0); scene.add(signLight);
 
   // ---- coloured glass mugs hanging on hooks under the shelf -------
   const mugCols = [0x5aa06a,0x7d4f9e,0x3f7fb5,0xd1687f,0x56b3ab,0xc8452f,
                    0xe0a53c,0x4a69b0,0x8fbf4a,0xc06098,0x3f9f8e,0xd4753a];
   for(let i=0;i<12;i++){
-    const mx = -2.75 + i*0.5;
+    const mx = -2.6 + i*0.473;
     box(.02,.09,.02, M.chrome, mx, AY-.14, -.24, rear);
     const mm = new THREE.MeshStandardMaterial({ color:mugCols[i], roughness:.14,
       metalness:.05, transparent:true, opacity:.85 });
@@ -2188,28 +2193,28 @@ const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rea
 
   // ---- plates and framed prints on the panelling -------------------
   const plateCols = [0xe8c84a,0x6fae5a,0x4f8fc0,0xd98aa0,0xdf8a46];
-  [[-5.2,3.5],[-4.4,2.9],[5.2,3.5],[4.4,2.9],[-5.6,2.1]].forEach((p,i)=>{
+  [[-4.45,2.95],[-3.75,2.42],[4.45,2.95],[3.75,2.42],[-4.9,1.85]].forEach((p,i)=>{
     const pl = mesh(G.cyl, new THREE.MeshStandardMaterial({
       color:plateCols[i%plateCols.length], roughness:.35 }), p[0], p[1], -.07, rear);
-    pl.scale.set(.52,.04,.52); pl.rotation.x = Math.PI/2;
+    pl.scale.set(.44,.04,.44); pl.rotation.x = Math.PI/2;
   });
-  for(const [fx,fy] of [[5.5,2.0],[-5.1,1.5],[5.0,1.4]]){
-    box(.56,.56,.05, new THREE.MeshStandardMaterial({color:0xf2efe4, roughness:.8}), fx, fy, -.06, rear);
+  for(const [fx,fy] of [[4.9,2.5],[-4.9,2.5],[4.85,1.85]]){
+    box(.46,.46,.05, new THREE.MeshStandardMaterial({color:0xf2efe4, roughness:.8}), fx, fy, -.06, rear);
     for(let k=0;k<4;k++)
-      box(.21,.21,.02, new THREE.MeshStandardMaterial({
+      box(.17,.17,.02, new THREE.MeshStandardMaterial({
         color:pick([0xd96a7a,0xe8c45a,0x6fae5a,0x4f8fc0,0xb389c4]), roughness:.7 }),
-        fx-.12+(k%2)*.24, fy-.12+((k/2)|0)*.24, -.10, rear);
+        fx-.1+(k%2)*.2, fy-.1+((k/2)|0)*.2, -.10, rear);
   }
 
   // ---- union jack bunting across the back --------------------------
   const ujMat = new THREE.MeshStandardMaterial({ map:texUnionFlag(), roughness:.85,
                                                  side:THREE.DoubleSide });
   for(const side of [-1,1]){
-    const x0 = side*2.6, x1 = side*6.4, n = 7;
+    const x0 = side*1.9, x1 = side*5.0, n = 6;
     const pts=[];
     for(let i=0;i<=n;i++){
       const t=i/n;
-      pts.push(v3(W/2 + x0+(x1-x0)*t, (AY+1.05) - Math.sin(Math.PI*((t*2)%1))*.16, L-0.95));
+      pts.push(v3(W/2 + x0+(x1-x0)*t, (AY+0.98) - Math.sin(Math.PI*((t*2)%1))*.14, L-0.95));
     }
     world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineBasicMaterial({color:0xd9d2c0})));
@@ -2754,44 +2759,44 @@ function texHead(){
   // there. Only about a quarter of the width is ever seen front-on, so the
   // features have to be sized for that band, not for the whole canvas.
   const c = cvs(256,128), g = c.getContext('2d');
-  g.fillStyle = '#e9bf94'; g.fillRect(0,0,256,128);
+  g.fillStyle = '#f0d2b0'; g.fillRect(0,0,256,128);
   const grd = g.createLinearGradient(0,0,0,128);
   grd.addColorStop(0,'rgba(196,150,114,.45)'); grd.addColorStop(.42,'rgba(255,230,206,0)');
   grd.addColorStop(1,'rgba(176,126,96,.5)');
   g.fillStyle = grd; g.fillRect(0,0,256,128);
   const CX = 64;
   g.fillStyle='rgba(206,142,118,.3)';                            // cheeks
-  g.beginPath(); g.ellipse(CX-24,70,14,9,0,0,6.3); g.fill();
-  g.beginPath(); g.ellipse(CX+24,70,14,9,0,0,6.3); g.fill();
+  g.beginPath(); g.ellipse(CX-22,71,12,8,0,0,6.3); g.fill();
+  g.beginPath(); g.ellipse(CX+22,71,12,8,0,0,6.3); g.fill();
   g.fillStyle='rgba(188,138,112,.2)';                            // under the jaw
   g.beginPath(); g.ellipse(CX,99,30,12,0,0,6.3); g.fill();
-  for(const ex of [CX-19, CX+19]){
-    g.save(); g.translate(ex,55);
-    g.fillStyle='#1a151c';                                       // kohl
-    g.beginPath(); g.ellipse(0,0,15.5,10.4,0,0,6.3); g.fill();
-    g.fillStyle='#f4f5f7';                                       // sclera
-    g.beginPath(); g.ellipse(0,1,11.8,7.0,0,0,6.3); g.fill();
-    g.fillStyle='#3a74a6'; g.beginPath(); g.arc(0,1,6.2,0,6.3); g.fill();
-    g.fillStyle='#2a567f'; g.beginPath(); g.arc(0,1,6.2,0.6,2.6); g.fill();
-    g.fillStyle='#14181e'; g.beginPath(); g.arc(0,1,2.9,0,6.3); g.fill();
-    g.fillStyle='#fff';   g.beginPath(); g.arc(-2.2,-1.5,1.8,0,6.3); g.fill();
-    g.strokeStyle='#1a151c'; g.lineWidth=3.2; g.lineCap='round'; // lash line
-    g.beginPath(); g.moveTo(-13,-4.6); g.quadraticCurveTo(0,-9.4,13,-4.0); g.stroke();
-    g.beginPath(); g.moveTo(12,-4.0); g.lineTo(18,-7.0); g.stroke();
+  for(const ex of [CX-16.5, CX+16.5]){
+    g.save(); g.translate(ex,56);
+    g.fillStyle='#17131b';                                       // kohl, all round
+    g.beginPath(); g.ellipse(0,0,12.6,10.2,0,0,6.3); g.fill();
+    g.fillStyle='#f6f6f7';                                       // sclera
+    g.beginPath(); g.ellipse(0,.6,9.0,7.1,0,0,6.3); g.fill();
+    g.fillStyle='#3d7cae'; g.beginPath(); g.arc(0,.6,5.9,0,6.3); g.fill();
+    g.fillStyle='#2b5a85'; g.beginPath(); g.arc(0,.6,5.9,0.5,2.7); g.fill();
+    g.fillStyle='#10141a'; g.beginPath(); g.arc(0,.6,2.6,0,6.3); g.fill();
+    g.fillStyle='#fff';   g.beginPath(); g.arc(-2.0,-1.6,1.7,0,6.3); g.fill();
+    g.strokeStyle='#17131b'; g.lineWidth=2.6; g.lineCap='round'; // heavier upper lid
+    g.beginPath(); g.moveTo(-11,-5.2); g.quadraticCurveTo(0,-9.6,11,-4.8); g.stroke();
+    g.beginPath(); g.moveTo(10.5,-4.8); g.lineTo(16,-7.4); g.stroke();
     g.restore();
-    g.strokeStyle='#17131a'; g.lineWidth=4.2; g.lineCap='round'; // brow
-    g.beginPath(); g.moveTo(ex-16,39); g.quadraticCurveTo(ex,33,ex+15,39.5); g.stroke();
+    g.strokeStyle='#1b1620'; g.lineWidth=2.8; g.lineCap='round'; // thin, high, arched
+    g.beginPath(); g.moveTo(ex-14,38); g.quadraticCurveTo(ex-1,31.5,ex+13,37); g.stroke();
   }
   g.strokeStyle='rgba(158,110,86,.45)'; g.lineWidth=2.4;         // nose
   g.beginPath(); g.moveTo(CX+1.5,63); g.lineTo(CX-2,71); g.stroke();
   g.fillStyle='rgba(150,104,80,.3)';
   g.beginPath(); g.ellipse(CX,72.5,6.5,2.6,0,0,6.3); g.fill();
-  g.strokeStyle='#8c464a'; g.lineWidth=3.4; g.lineCap='round';   // mouth
-  g.beginPath(); g.moveTo(CX-13,78); g.quadraticCurveTo(CX,84,CX+13,77.5); g.stroke();
-  g.strokeStyle='rgba(206,136,128,.55)'; g.lineWidth=4.2;
-  g.beginPath(); g.moveTo(CX-9,81.5); g.quadraticCurveTo(CX,85.5,CX+9,81); g.stroke();
-  g.fillStyle='rgba(60,45,50,.09)';                              // a little stubble
-  for(let i=0;i<340;i++) g.fillRect(CX+rr(-1,1)*28, rr(80,100), 1.3, 1.3);
+  g.strokeStyle='#8e4a4e'; g.lineWidth=2.8; g.lineCap='round';   // a small smirk
+  g.beginPath(); g.moveTo(CX-9.5,79); g.quadraticCurveTo(CX,83.5,CX+10.5,77.5); g.stroke();
+  g.strokeStyle='rgba(204,138,132,.4)'; g.lineWidth=3.4;
+  g.beginPath(); g.moveTo(CX-7,81.5); g.quadraticCurveTo(CX,84.5,CX+7.5,80.5); g.stroke();
+  g.fillStyle='rgba(66,52,58,.045)';                             // the faintest shadow
+  for(let i=0;i<150;i++) g.fillRect(CX+rr(-1,1)*22, rr(84,96), 1.2, 1.2);
   return finish(c,1,1);
 }
 function texFace(){
@@ -2833,7 +2838,7 @@ function buildWalker(){
     t.repeat.set(Math.max(.7, w/(MOTIF*3)), Math.max(.7, h/(MOTIF*3)));
     return new THREE.MeshStandardMaterial({ color:0xcfc8c0, map:t, roughness:.9 });
   };
-  const skin = new THREE.MeshStandardMaterial({ color:0xe9bf94, roughness:.78 });
+  const skin = new THREE.MeshStandardMaterial({ color:0xf0d2b0, roughness:.78 });
   const headM = new THREE.MeshStandardMaterial({ map:texHead(), roughness:.78 });
   const tee  = new THREE.MeshStandardMaterial({ color:0x15151a, roughness:.92 });
   const hair = new THREE.MeshStandardMaterial({ color:0x17141c, roughness:.96, flatShading:true });
@@ -2872,7 +2877,7 @@ function buildWalker(){
   tube(.055,.062,.10, skin, neck, .10, 8);
   const head = new THREE.Group(); head.position.y = .095; neck.add(head);
   const skull = new THREE.Mesh(new THREE.SphereGeometry(.5, 20, 14), headM);
-  skull.scale.set(.228,.272,.238); skull.position.y = .125;
+  skull.scale.set(.203,.285,.222); skull.position.y = .125;
   shadeOn(skull,true,false); head.add(skull);
 
   // shaggy layered hair
@@ -3061,19 +3066,53 @@ function updateWalker(w, dt){
   }
 
   // ---- gait ----------------------------------------------------------
-  // the phase is driven by distance walked, so the feet never skate
-  const STRIDE = 1.38;
-  w.phase += (moved / STRIDE) * Math.PI * 2;
-  const th = w.phase, s = Math.sin(th), run = Math.min(1, w.speed / 1.22);
+  // Drive the FEET, not the joints. Pick where each foot should be, then
+  // solve the two-link leg for it. Posing the hip on a curve and hoping the
+  // foot lands right cannot work: the knee changes the leg's effective
+  // length, so the foot overshoots and scrubs along the floor.
+  const run = Math.min(1, w.speed / 1.22);
+  const STEP = 0.60 * Math.max(0.35, run);        // metres covered per step
+  const stride = 2 * STEP;                         // ...and per full cycle
+  w.phase += (moved / stride) * Math.PI * 2;
+  const th = w.phase, s = Math.sin(th);
 
-  const legPose = (lg, p) => {
-    lg.hip.rotation.x = -0.42 * Math.sin(p) * run;
-    const bend = Math.max(0, Math.sin(p - 0.55));
-    lg.kn.rotation.x = (0.10 + 1.25 * Math.pow(bend, 1.35)) * run;
-    lg.an.rotation.x = (-0.20 * Math.sin(p + 1.15) + 0.06) * run;
+  const TWO = Math.PI*2, HALF = Math.PI/2;
+  const GROUND = 0.155;                            // ankle height when stood on it
+  const L1 = 0.43, L2 = 0.43, LMAX = L1 + L2 - 0.015;
+  const norm = (p) => ((p % TWO) + TWO) % TWO;
+
+  // where this foot wants to be, as an offset ahead of the hip and a height
+  const footTarget = (q) => {
+    if(q >= HALF && q < Math.PI*1.5){                        // stance: planted
+      const u = (q - HALF) / Math.PI;
+      return { fwd: (STEP/2) * (1 - 2*u), y: GROUND, stance: true };
+    }
+    const u = q < HALF ? (q + HALF)/Math.PI : (q - Math.PI*1.5)/Math.PI;
+    const e = u*u*u*(u*(u*6 - 15) + 10);                     // smootherstep
+    return { fwd: -(STEP/2) + STEP*e, y: GROUND + 0.085*Math.sin(Math.PI*u), stance: false };
   };
-  legPose(w.legL, th);
-  legPose(w.legR, th + Math.PI);
+
+  // the pelvis rides at whatever height the stance leg can reach the ground at,
+  // so the vertical bob of the walk falls out of the geometry for free
+  const qL = norm(th), qR = norm(th + Math.PI);
+  const qS = (qL >= HALF && qL < Math.PI*1.5) ? qL : qR;
+  const fwdS = (STEP/2) * (1 - 2*((qS - HALF)/Math.PI));
+  const hipH = GROUND + Math.sqrt(Math.max(0.09, LMAX*LMAX - fwdS*fwdS));
+
+  const solveLeg = (lg, q) => {
+    const t = footTarget(q);
+    const dy = Math.max(0.12, hipH - t.y);                   // hip is above the foot
+    const dist = Math.min(LMAX, Math.hypot(t.fwd, dy));
+    const alpha = Math.atan2(t.fwd, dy);
+    const beta  = Math.acos(Math.min(1, Math.max(-1,
+                   (dist*dist + L1*L1 - L2*L2) / (2*dist*L1))));
+    lg.hip.rotation.x = -(alpha + beta);
+    lg.kn.rotation.x  = 2*beta;
+    lg.an.rotation.x  = t.stance ? -(lg.hip.rotation.x + lg.kn.rotation.x)
+                                 : -(lg.hip.rotation.x + lg.kn.rotation.x) - 0.18;
+  };
+  solveLeg(w.legL, qL);
+  solveLeg(w.legR, qR);
 
   const armPose = (am, p) => {
     am.sh.rotation.x = 0.34 * Math.sin(p) * run;
@@ -3084,19 +3123,19 @@ function updateWalker(w, dt){
   armPose(w.armR, th + Math.PI);
 
   // the body rides on top of all that
-  w.body.position.y = w.hipY - 0.020 + Math.cos(th*2) * 0.021 * run;
+  w.body.position.y = hipH;
   w.body.position.x = Math.sin(th) * 0.022 * run;
   w.body.rotation.z = -0.045 * s * run;
   w.body.rotation.y = -0.07 * s * run;
   w.torso.rotation.y = 0.13 * s * run;
-  w.torso.rotation.x = 0.055 * run + 0.02;
+  w.torso.rotation.x = 0.028 * run + 0.012;   // a lean, not a stoop
   w.head.rotation.y = -0.09 * s * run;
   w.head.rotation.x = -0.03 * run;
 
   // idle: breathe, and look at whoever is standing there
   if(run < 0.08){
     const br = Math.sin(clock*1.6)*0.012;
-    w.body.position.y = w.hipY + br;
+    w.body.position.y = GROUND + LMAX + br;
     w.torso.rotation.x = 0.02 + br*0.3;
     w.armL.sh.rotation.x = 0.04 + br;  w.armR.sh.rotation.x = 0.04 - br;
     w.armL.el.rotation.x = -0.22; w.armR.el.rotation.x = -0.22;
@@ -3209,7 +3248,12 @@ function setView(v){
   // in the plan views the roof and the rig come off, like a dolls' house
   const inside = (v === 'fp');
   shell.visible = inside; rig.visible = inside;
-  M.canvas.opacity = inside ? .93 : .18;      // cutaway walls
+  M.canvas.transparent = !inside;             // cutaway walls for the plan views
+  M.canvas.opacity = inside ? 1 : .18;
+  M.canvas.needsUpdate = true;
+  M.roof.transparent = !inside;
+  M.roof.opacity = inside ? 1 : .18;
+  M.roof.needsUpdate = true;
   M.clear.opacity  = inside ? .22 : .06;
   for(const sh of SHAFTS) sh.visible = inside;
   dust.visible = inside;

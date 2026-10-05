@@ -105,10 +105,17 @@ slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
 ## The marquee
 
 The roof is a peaked "Capri" frame, as the real one is: four pagoda points
-along the ridge with the canvas falling to a valley where the bays meet, a
-pole and finial under every point, and hip rafters running off each one. The
-canvas is taut at the poles and swags between them, which is the shape that
-tells you it is a tent and not a shed.
+along the ridge with the canvas falling to a valley where the bays meet, taut
+at the points and swagged between them.
+
+One function, `canopyY(x, z)`, defines the height of the cloth at any point.
+The roof mesh is built from it and **every** frame member is hung beneath it by
+`curvedMember()`, which samples its run and follows the curve. That is not
+decoration: a straight strut from eave to ridge passes *above* a canvas that
+sags, so it pokes out through the roof — which is exactly what the earlier
+version did. The lighting rig is hung from the lowest point of the cloth across
+its own span for the same reason. The canvas is opaque: you should never see
+sky or trees through the roof of a marquee.
 
 ## Cosiness
 
@@ -143,15 +150,18 @@ Noel is a procedurally animated character, not a canned animation:
 - **Rig** — a joint hierarchy (pelvis → torso → neck → head, shoulder → elbow →
   hand, hip → knee → ankle → foot) built from boxes, so every limb rotates
   about a real joint.
-- **Gait** — driven by sinusoids off a single phase. Thighs swing ±0.42 rad;
-  knees only ever bend one way, hard through the swing and barely at all
-  through stance; ankles counter-rotate; arms swing against their own leg with
-  the elbow tightening on the forward reach. The body rides on top: a vertical
-  bob at twice stride frequency, lateral sway and pelvis roll at once per
-  stride, and a counter-rotating torso.
-- **No foot skating** — the phase advances with *distance actually walked*
-  (`phase += moved / 1.38m × 2π`), not with time, so when he slows down, turns
-  or is blocked, the feet stay planted.
+- **Gait** — the feet are driven, not the joints. Each foot gets a target: during
+  stance it is pinned to the ground and tracks back at exactly walking pace;
+  during swing it arcs forward on a smootherstep. The leg is then solved for
+  that target with two-link IK. Posing the hip on a curve and hoping the foot
+  lands right cannot work — the knee changes the leg's effective length, so the
+  foot overshoots and scrubs. Measured: the planted foot drifts 3cm over a 59cm
+  stance (0.05 of body travel), against 0.57 for the hand-posed version.
+- **The bob is free** — the pelvis rides at whatever height the stance leg can
+  reach the ground from, so the vertical oscillation of a walk falls out of the
+  geometry instead of being an authored sine.
+- **No foot skating** — the phase advances with *distance actually walked*, not
+  with time, so when he slows, turns or is blocked the feet stay planted.
 - **Navigation** — waypoints around the tent and out onto the grass, steered by
   whiskers that fan out from the desired heading and take the first one with
   clear ground. Movement resolves per axis, so he slides along furniture rather
