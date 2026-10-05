@@ -234,7 +234,7 @@ renderer.toneMapping       = THREE.NoToneMapping;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xbcd8ea);
-scene.fog = new THREE.Fog(0xcadeea, 55, 330);
+scene.fog = new THREE.Fog(0xc6d9e4, 60, 340);
 
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.12, 620);
 let orthoHalf = 26;
@@ -301,6 +301,16 @@ function texFloor(){
 function paintCanvas(bump){
   const S = 512, c = cvs(S,S), g = c.getContext('2d');
   g.fillStyle = bump ? '#808080' : '#f4f2ea'; g.fillRect(0,0,S,S);
+  // a proper twill: the weft steps across one thread each pass, which is what
+  // gives marquee canvas its fine diagonal grain
+  for(let y=0;y<S;y+=2){
+    for(let x=0;x<S;x+=2){
+      const over = (((x>>1) + (y>>1)) % 3) === 0;
+      g.fillStyle = bump ? (over ? 'rgba(152,152,152,.22)' : 'rgba(110,110,110,.16)')
+                         : (over ? 'rgba(255,255,254,.07)' : 'rgba(206,205,198,.055)');
+      g.fillRect(x, y, 2, 2);
+    }
+  }
   if(!bump){
     // cloudy translucency — light does not come through evenly
     for(let i=0;i<90;i++){
@@ -310,11 +320,6 @@ function paintCanvas(bump){
       gr.addColorStop(0,'rgba('+(w?'255,255,252':'206,206,198')+','+t+')');
       gr.addColorStop(1,'rgba(255,255,255,0)');
       g.fillStyle=gr; g.beginPath(); g.arc(x,y,r,0,6.3); g.fill();
-    }
-    // woven scrim showing through the coating
-    for(let i=0;i<S;i+=4){
-      g.fillStyle='rgba(205,204,196,.30)'; g.fillRect(i,0,1.4,S);
-      g.fillStyle='rgba(214,213,205,.24)'; g.fillRect(0,i,S,1.4);
     }
     // grime gathering towards the foot of the panel
     const gr2=g.createLinearGradient(0,S*.72,0,S);
@@ -338,7 +343,23 @@ function paintCanvas(bump){
     g.beginPath(); g.moveTo(4.5,0);  g.lineTo(4.5,S);  g.stroke();
     g.setLineDash([]); g.restore();
   }
-  // slack creasing fanning off the seams
+  // the pull creases that fan off every fixing point
+  for(let i=0;i<15;i++){
+    const cy=rnd()*S, from=rnd()<.5, x0=from?rr(4,26):rr(S-26,S-4), len=rr(60,230);
+    const dir=from?1:-1;
+    g.strokeStyle = bump ? 'rgba(92,92,92,.22)' : 'rgba(198,196,187,.14)';
+    g.lineWidth=rr(1.0,2.0);
+    g.beginPath(); g.moveTo(x0,cy);
+    g.bezierCurveTo(x0+dir*len*.35, cy+rr(-26,26), x0+dir*len*.7, cy+rr(-30,30),
+                    x0+dir*len, cy+rr(-16,16));
+    g.stroke();
+    g.strokeStyle = bump ? 'rgba(206,206,206,.18)' : 'rgba(255,255,255,.13)';
+    g.lineWidth=rr(.7,1.3);
+    g.beginPath(); g.moveTo(x0,cy+2.2);
+    g.bezierCurveTo(x0+dir*len*.35, cy+2.2+rr(-26,26), x0+dir*len*.7, cy+2.2+rr(-30,30),
+                    x0+dir*len, cy+2.2+rr(-16,16));
+    g.stroke();
+  }
   for(let i=0;i<22;i++){
     const y=rnd()*S, len=rr(40,170), x0=rnd()<.5 ? rr(10,90) : rr(S-90,S-10);
     g.strokeStyle = bump ? 'rgba(110,110,110,.35)' : 'rgba(206,204,195,.26)';
@@ -470,6 +491,21 @@ function drawChalk(n){
 }
 function texChalk(){ drawChalk(0); return finish(chalkCanvas,1,1); }
 
+function texWater(){
+  const c = cvs(64,256), g = c.getContext('2d');
+  g.fillStyle='#dcf0f8'; g.fillRect(0,0,64,256);
+  for(let i=0;i<70;i++){                                   // stretched filaments
+    const x=rnd()*64, w=rr(1,5), y=rnd()*256, h=rr(40,200);
+    g.fillStyle = rnd()<.5 ? 'rgba(255,255,255,'+rr(.14,.5)+')'
+                           : 'rgba(150,196,214,'+rr(.1,.3)+')';
+    g.fillRect(x,y,w,h); if(y+h>256) g.fillRect(x,y-256,w,h);
+  }
+  for(let i=0;i<180;i++){                                  // bubbles in the flow
+    g.fillStyle='rgba(255,255,255,'+rr(.2,.6)+')';
+    g.beginPath(); g.arc(rnd()*64, rnd()*256, rr(.6,1.8), 0, 6.3); g.fill();
+  }
+  return finish(c,1,1);
+}
 function texPlank(){
   const c = cvs(256,256), g = c.getContext('2d');
   g.fillStyle='#e9e2d0'; g.fillRect(0,0,256,256);
@@ -590,6 +626,7 @@ let T = null;
 T = {
   wood:   texWood(),
   fabricBump: paintCanvas(true),
+  water:  texWater(),
   floor:  texFloor(),
   fabric: texFabric(),
   grass:  texGrass(),
@@ -613,14 +650,14 @@ const M = {
   // the marquee skin: translucent so the lawn, the trees and the weather
   // all read straight through the walls — you are inside a lit lantern
   canvas: new THREE.MeshStandardMaterial({
-            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.035,
-            color:0xf3f1ea, roughness:.96, side:THREE.DoubleSide,
-            emissive:0xdfe8ee, emissiveIntensity:.26 }),
+            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.025,
+            color:0xf5f3ec, roughness:.96, side:THREE.DoubleSide,
+            emissive:0xdae4ec, emissiveIntensity:.15 }),
   // opaque: you should never see sky or trees through the roof of a marquee
   roof:   new THREE.MeshStandardMaterial({
-            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.04,
-            color:0xf6f4ee, roughness:.97, side:THREE.DoubleSide,
-            emissive:0xe4edf3, emissiveIntensity:.40 }),
+            map:T.fabric, bumpMap:T.fabricBump, bumpScale:.028,
+            color:0xf8f6f0, roughness:.97, side:THREE.DoubleSide,
+            emissive:0xe6eef4, emissiveIntensity:.30 }),
   clear:  new THREE.MeshPhysicalMaterial({
             color:0xcfe0e6, roughness:.12, metalness:.08, transparent:true, opacity:.42,
             side:THREE.DoubleSide }),
@@ -695,8 +732,8 @@ function colliderFor(m, w, d){            // axis-aligned box from a centre
 /* ------------------------------------------------------------------ */
 /* 5 · Daylight                                                        */
 /* ------------------------------------------------------------------ */
-const sunDir = new THREE.Vector3(34, 38, -16);
-const sun = new THREE.DirectionalLight(0xfff2da, 0.78);
+const sunDir = new THREE.Vector3(32, 23, -19);
+const sun = new THREE.DirectionalLight(0xffeccb, 1.08);
 sun.position.copy(sunDir);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -710,10 +747,10 @@ scene.add(sun); scene.add(sun.target);
 
 // sky + bounced-off-the-lawn fill. Under NoToneMapping these stay modest
 // on purpose: nothing in here is allowed to blow out to white.
-scene.add(new THREE.HemisphereLight(0xcfe6f6, 0x6f7f52, 0.50));
-scene.add(new THREE.AmbientLight(0xe8f0f4, 0.13));
+scene.add(new THREE.HemisphereLight(0xc2dcee, 0x6f6d5c, 0.28));
+scene.add(new THREE.AmbientLight(0xdce8ef, 0.055));
 // the canvas overhead re-radiates: a soft warm bounce down the middle
-const bounce = new THREE.PointLight(0xffeccf, 0.40, 30, 2);
+const bounce = new THREE.PointLight(0xffe8c4, 0.30, 30, 2);
 bounce.position.set(W/2, 4.6, L/2); scene.add(bounce);
 
 // Metal with nothing to reflect renders black, so bake a tiny image-based
@@ -1424,24 +1461,38 @@ buntingRun(DX0-1.0, -2.1, DX1+1.0, -2.1, 2.45, 0.15);
 /* ------------------------------------------------------------------ */
 /* 10 · Lighting rig & the light that comes through the canvas         */
 /* ------------------------------------------------------------------ */
-const rigMat = new THREE.MeshStandardMaterial({ color:0x23282c, roughness:.65, metalness:.3 });
+const rigMat = new THREE.MeshStandardMaterial({ color:0x1d2124, roughness:.58, metalness:.35 });
 const rig = new THREE.Group(); world.add(rig);
-for(const z of PEAKZ){
-  // hang from the lowest point of the cloth across the bar's own span
-  const yT = Math.min(canopyY(2.4, z), canopyY(W-2.4, z)) - 0.42;
-  strut(v3(2.4,yT,z), v3(W-2.4,yT,z), .05, rigMat, rig);           // the bar
-  strut(v3(2.4,yT-.30,z), v3(W-2.4,yT-.30,z), .036, rigMat, rig);
-  for(let i=0;i<5;i++){
-    strut(v3(2.4+i*2.64, yT, z), v3(2.4+(i+.5)*2.64, yT-.30, z), .026, rigMat, rig);
-  }
-  for(const x of [3.6, 6.3, 9, 11.7, 14.4]){                        // lamps
-    const g = new THREE.Group(); g.position.set(x, yT-0.38, z); rig.add(g);
-    g.rotation.x = 0.0;
-    box(.3,.3,.42, rigMat, 0,-.08,0, g);
-    box(.34,.34,.06, rigMat, 0,-.08,.23, g);
-    const lens = mesh(G.plane, M.bulb, 0,-.26,0, g);
-    lens.rotation.x = -Math.PI/2; lens.scale.set(.26,.26,1);
-    box(.05,.3,.05, rigMat, 0, .1, 0, g);
+// In the photographs every lamp is clamped straight onto the white roof frame
+// on its own short drop arm. There are no black trusses spanning the tent.
+function rigLamp(x, z, aim){
+  const g = new THREE.Group();
+  g.position.set(x, canopyY(x, z) - 0.09, z);
+  rig.add(g);
+  box(.085,.085,.11, rigMat, 0, -.04, 0, g);                 // clamp
+  box(.042,.28,.042, rigMat, 0, -.20, 0, g);                 // drop arm
+  const yoke = new THREE.Group(); yoke.position.y = -.34; g.add(yoke);
+  yoke.rotation.z = aim * 0.38;
+  yoke.rotation.x = 0.26;
+  for(const sx of [-1,1]) box(.022,.2,.16, rigMat, sx*.115, -.10, 0, yoke);  // yoke arms
+  box(.2,.2,.26, rigMat, 0, -.11, 0, yoke);                  // body
+  box(.24,.24,.025, rigMat, 0, -.11, -.145, yoke);           // barn door frame
+  for(const sy of [-1,1]) box(.25,.025,.1, rigMat, 0, -.11+sy*.125, -.185, yoke);
+  const lens = mesh(G.plane, M.bulb, 0, -.11, -.132, yoke);
+  lens.rotation.y = Math.PI; lens.scale.set(.17,.17,1);
+  box(.03,.09,.03, rigMat, .12, -.02, 0, yoke);              // tilt handle
+}
+for(const z of [3, 9, 15, 21, 27, 33])
+  for(const [lx,aim] of [[2.7,-1],[5.7,-1],[W-5.7,1],[W-2.7,1]]) rigLamp(lx, z, aim);
+
+// the long white softboxes that run up each slope
+const softMat = new THREE.MeshStandardMaterial({ color:0xfaf7ee, emissive:0xfff3da,
+  emissiveIntensity:.85, roughness:.6 });
+for(const sx of [4.2, W-4.2]){
+  for(let z=3; z<L-2; z+=7){
+    const y = canopyY(sx, z+1.6) - 0.22;
+    const p = box(.30,.07,3.2, softMat, sx, y, z+1.6, rig);
+    for(const e of [-1,1]) box(.05,.26,.05, rigMat, sx, y+.16, z+1.6+e*1.5, rig);
   }
 }
 // shafts of afternoon sun leaning in through the sunny wall
@@ -1721,6 +1772,7 @@ const towelMats = [
   new THREE.MeshStandardMaterial({ map:texTowel('#eef2e8','#7fa05c'), roughness:.95, side:THREE.DoubleSide })
 ];
 const MIXERS = [];
+const WATERS = [];      // running taps
 function makeMixer(x,y,z,p,hex){
   const g = new THREE.Group(); g.position.set(x,y,z); p.add(g);
   g.rotation.y = Math.PI + rr(-.3,.3);   // bowl toward the aisle
@@ -1850,19 +1902,63 @@ function buildBench(cx, cz, hex, idx){
 
   // ---- sink ----
   const sx = -IW/2 + .62;
-  box(.56,.03,.46, M.steel, sx, IH+.082, .04, g);
-  const basin = box(.46,.14,.36, M.steel, sx, IH-.005, .04, g);
-  box(.42,.01,.32, M.glass, sx, IH+.055, .04, g);
-  const tap = mesh(G.cyl, M.chrome, sx, IH+.21, .3, g); tap.scale.set(.034,.26,.034);
-  const spout = mesh(G.cyl, M.chrome, sx, IH+.33, .22, g); spout.scale.set(.028,.19,.028);
-  spout.rotation.x = -Math.PI/2.2;
-  for(const s of [-1,1]) { const h = mesh(G.cyl, M.chrome, sx+s*.12, IH+.14, .3, g); h.scale.set(.02,.09,.02); }
-  const waterMat = new THREE.MeshStandardMaterial({ color:0xcfe8f2, roughness:.06,
-    transparent:true, opacity:.5, emissive:0x9fd0e4, emissiveIntensity:.18 });
-  const water  = mesh(G.cyl, waterMat, sx, IH+.09, .14, g);
-  water.scale.set(.026,.36,.026); water.visible = false;
-  const splash = mesh(G.cyl, waterMat, sx, IH-.08, .14, g);
-  splash.scale.set(.17,.012,.17); splash.visible = false;
+  // An inset basin needs a rim with a hole in it, not a plate laid over the
+  // top — four bars round the opening, then the bowl hung underneath.
+  const basinM = new THREE.MeshStandardMaterial({ color:0xdadee0, roughness:.26,
+    metalness:.42, side:THREE.DoubleSide });
+  const OW = .44, OD = .34, RIM = .07;
+  for(const bz of [-1,1])
+    box(OW+RIM*2, .028, RIM, M.steel, sx, IH+.082, .04 + bz*(OD/2+RIM/2), g);
+  for(const bx of [-1,1])
+    box(RIM, .028, OD, M.steel, sx + bx*(OW/2+RIM/2), IH+.082, .04, g);
+  box(OW, .016, OD, basinM, sx, IH-.072, .04, g);                   // floor
+  for(const bz of [-1,1]) box(OW, .16, .016, basinM, sx, IH+.005, .04+bz*OD/2, g);
+  for(const bx of [-1,1]) box(.016, .16, OD, basinM, sx+bx*OW/2, IH+.005, .04, g);
+  mesh(G.cyl, M.dark, sx, IH-.06, .04, g).scale.set(.07,.014,.07);  // waste
+
+  // a gooseneck drawn as one smooth tube, not a stack of segments
+  mesh(G.cyl, M.chrome, sx, IH+.105, .30, g).scale.set(.085,.04,.085);
+  const neckCurve = new THREE.CatmullRomCurve3([
+    v3(sx, IH+.12, .30), v3(sx, IH+.34, .30), v3(sx, IH+.47, .295),
+    v3(sx, IH+.525, .245), v3(sx, IH+.515, .185), v3(sx, IH+.482, .158)
+  ]);
+  const neck = new THREE.Mesh(new THREE.TubeGeometry(neckCurve, 24, .019, 10), M.chrome);
+  shadeOn(neck, true, false); g.add(neck);
+  mesh(G.cyl, M.chrome, sx, IH+.468, .158, g).scale.set(.028,.03,.028);   // aerator
+  for(const sgn of [-1,1]){                                          // lever handles
+    const h = mesh(G.cyl, M.chrome, sx+sgn*.135, IH+.145, .30, g);
+    h.scale.set(.024,.1,.024);
+    const lv = box(.11,.022,.022, M.chrome, sx+sgn*.185, IH+.19, .30, g);
+    lv.rotation.z = sgn*.25;
+  }
+
+  // A falling stream narrows as it accelerates, breaks into a crown where it
+  // lands, and leaves a ring spreading over the water in the basin.
+  const streamMat = new THREE.MeshStandardMaterial({ map:T.water.clone(), color:0xf2fbff,
+    roughness:.03, metalness:.1, transparent:true, opacity:.88,
+    emissive:0xcdeaf8, emissiveIntensity:.35, side:THREE.DoubleSide });
+  streamMat.map.needsUpdate = true;
+  const stream = mesh(new THREE.CylinderGeometry(.019,.0105,.545,12,1,true), streamMat,
+                      sx, IH+.196, .158, g);
+  const basinWater = mesh(G.cyl, new THREE.MeshStandardMaterial({ color:0xcbe6f0,
+    roughness:.03, metalness:.5, transparent:true, opacity:.55 }), sx, IH-.058, .04, g);
+  basinWater.scale.set(OW-.02, .01, OD-.02);
+  const crown = mesh(new THREE.CylinderGeometry(.055,.014,.05,12,1,true), streamMat,
+                     sx, IH-.038, .158, g);
+  const ring = mesh(G.torus, streamMat, sx, IH-.046, .158, g);
+  ring.scale.set(.15,.15,.02); ring.rotation.x = Math.PI/2;
+  const drops = [];
+  for(let i=0;i<5;i++){
+    const d = mesh(G.sphere, streamMat, sx+rr(-.07,.07), IH-.02, .158+rr(-.06,.06), g);
+    d.scale.setScalar(rr(.008,.014)); drops.push(d);
+  }
+  const wparts = [stream, basinWater, crown, ring].concat(drops);
+  wparts.forEach(m => m.visible = false);
+  const water = { get visible(){ return stream.visible; },
+                  set visible(v){ wparts.forEach(m => m.visible = v); } };
+  const splash = { visible:false };
+  WATERS.push({ mat:streamMat, stream, crown, ring, drops, baseY: IH-.02,
+                on(){ return stream.visible; } });
 
   // ---- hob ----
   const hx2 = .35;
@@ -2276,6 +2372,28 @@ const rear = new THREE.Group(); rear.position.set(W/2, 0, L-0.55); world.add(rea
   addCollider(W/2-3.9, W/2+3.9, L-1.6, L-0.3);
   addCollider(W/2-6.6, W/2+6.6, L-0.75, L-0.35);
 }
+// The back is one run in the photographs, not a panel with gaps either side:
+// the cream panelling, the counter and the worktop all carry on to both walls.
+(function backRun(){
+  const zW = L-0.55, zC = L-1.05;
+  const plankSide = texPlank(); plankSide.repeat.set(3,2);
+  const sideWallMat = new THREE.MeshStandardMaterial({ map:plankSide, color:0xf4efe2,
+    roughness:.9, side:THREE.DoubleSide });
+  const cabM = new THREE.MeshStandardMaterial({ map:texPanel(PAL.teal, 3), roughness:.55 });
+  const tealM = new THREE.MeshStandardMaterial({ color:PAL.teal, roughness:.6 });
+  for(const [x0,x1] of [[1.5, W/2-5.28], [W/2+5.28, W-1.5]]){
+    const wd = x1-x0, cx = (x0+x1)/2;
+    shadeOn(box(wd, 2.72, .1, sideWallMat, cx, 1.36, zW, world), false, true);
+    box(wd, .15, .17, tealM, cx, 2.77, zW-.04, world);
+    const c = new THREE.Mesh(G.unit, [cabM,cabM,tealM,tealM,cabM,cabM]);
+    c.scale.set(wd, 1.0, .85); c.position.set(cx, .5, zC);
+    shadeOn(c, true, true); world.add(c);
+    box(wd+.08, .12, .9, tealM, cx, .06, zC, world);
+    shadeOn(box(wd+.05, .09, .95, M.wood, cx, 1.07, zC, world), true, true);
+    addCollider(x0-.05, x1+.05, zC-.5, zW+.1);
+  }
+})();
+
 // pantry shelving either side of the arch
 function shelfUnit(x, z, wdt){
   const g = new THREE.Group(); g.position.set(x,0,z); world.add(g);
@@ -2317,8 +2435,8 @@ function shelfUnit(x, z, wdt){
     strut(v3(px,2.36,z-.34), v3(px,2.2,z-.34), .008, M.chrome, world);
   }
 }
-shelfUnit(3.0, L-0.85, 4.2);
-shelfUnit(W-3.0, L-0.85, 4.2);
+shelfUnit(2.9, L-1.15, 2.4);
+shelfUnit(W-2.9, L-1.15, 2.4);
 // potted greenery in the back corners
 for(const x of [0.9, W-0.9]){
   const g = new THREE.Group(); g.position.set(x, 0, L-1.9); world.add(g);
@@ -2402,7 +2520,7 @@ scene.traverse(o=>{
   if(!o.material) return;
   const list = Array.isArray(o.material) ? o.material : [o.material];
   for(const m of list)
-    if(m.isMeshStandardMaterial) m.envMapIntensity = m.userData.noEnv ? 0 : 0.32;
+    if(m.isMeshStandardMaterial) m.envMapIntensity = m.userData.noEnv ? 0 : 0.20;
 });
 
 /* ------------------------------------------------------------------ */
@@ -2987,7 +3105,27 @@ const SAY = [
   'I would judge, but I have no qualifications and strong feelings.',
   'The ducks on the pond get the offcuts. They expect it now.',
   'This is the calmest the tent will be all day.',
-  'Behind every showstopper is a bin nobody mentions.'
+  'Behind every showstopper is a bin nobody mentions.',
+  'The icing sugar has got everywhere. Including, somehow, my pocket.',
+  'I asked what tempering was and now I am frightened.',
+  'That is a lot of eggs for one person to be responsible for.',
+  'Every tent needs a man standing about saying things. I am that man.',
+  'I have opinions about ganache that nobody has asked for.',
+  'There is a fridge in here with my name on it. Literally. Someone wrote it.',
+  'The sponge is in. We wait. This is the worst part.',
+  'A soggy bottom is a state of mind, mostly.',
+  'Somebody has brought a blowtorch and will not say why.',
+  'I would like it noted that I predicted the custard.',
+  'The bunting is holding up better than most of us.',
+  'If you listen carefully you can hear twelve people panicking politely.',
+  'Nothing in this tent is as calm as it looks from the outside.',
+  'I had a biscuit at ten and I have been coasting on it since.',
+  'This is the only workplace where burning something is a plot point.',
+  'That lattice took forty minutes. It will be eaten in nine seconds.',
+  'Someone has piped a face onto their showstopper. It is watching me.',
+  'Flour, butter, sugar, dread. The four food groups.',
+  'I am not allowed near the ovens after what happened.',
+  'When in doubt, add more cream and leave the tent.'
 ];
 
 let sayN = (rnd()*SAY.length)|0;
@@ -3353,6 +3491,20 @@ function animate(dt){
     d.g.rotation.y = Math.atan2(-Math.sin(d.a)*d.pr, Math.cos(d.a)*d.pb) * Math.sign(d.sp)
                    + (d.sp > 0 ? 0 : Math.PI);
     d.g.rotation.z = Math.sin(clock*0.9 + d.ph)*0.05;
+  }
+  for(const wtr of WATERS){
+    if(!wtr.on()) continue;
+    wtr.mat.map.offset.y -= dt * 2.6;                       // the flow itself
+    const t = clock * 7.0;
+    wtr.crown.scale.set(1 + Math.sin(t)*.14, 1 + Math.sin(t*1.7)*.2, 1 + Math.cos(t)*.14);
+    const rp = (clock * 1.6) % 1;                           // a ring spreading out
+    wtr.ring.scale.set(.1 + rp*.26, .1 + rp*.26, .022);
+    wtr.ring.material.opacity = .8 * (1 - rp);
+    wtr.drops.forEach((d,i)=>{
+      const u = ((clock*2.2 + i*0.37) % 1);
+      d.position.y = wtr.baseY + 0.07*Math.sin(Math.PI*u);
+      d.visible = u < 0.8;
+    });
   }
   // a live camera keeps you in frame
   for(const c of CAMERAS){

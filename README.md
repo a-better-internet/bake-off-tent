@@ -98,6 +98,11 @@ jars — dropped into whatever slots the sink, hob and mixer leave free, seven
 to eleven at a time. The bake might be on a stand, on a board or still in its
 tin, and some bakers leave flour all over the worktop.
 
+The canvas is woven as a twill — the weft steps one thread each pass, which is
+what gives marquee fabric its fine diagonal grain — with welded seams, stitch
+lines and the pull creases that fan off every fixing point, all of it driving a
+bump map as well as the colour.
+
 Every texture — timber, canvas, grass, gravel, painted shaker panels, brick,
 slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
 `<canvas>` at boot. There are no image files anywhere.
@@ -116,6 +121,16 @@ sags, so it pokes out through the roof — which is exactly what the earlier
 version did. The lighting rig is hung from the lowest point of the cloth across
 its own span for the same reason. The canvas is opaque: you should never see
 sky or trees through the roof of a marquee.
+
+## Light and lamps
+
+Mid-afternoon: a strong warm key at about 33° elevation with the fill pulled
+right down (hemisphere 0.26, ambient 0.055, environment 0.20), so the benches
+cast real shadows and the canvas has tone in it instead of blowing to white.
+
+The lamps are clamped straight onto the white roof frame on their own short
+drop arms, as they are in the photographs — there are no black trusses
+spanning the tent — with long white softboxes running up each slope.
 
 ## Cosiness
 
