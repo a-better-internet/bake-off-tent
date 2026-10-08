@@ -40,18 +40,23 @@ On a touch screen: one finger looks, the on-screen pad walks, `USE` interacts.
 
 ## What's in there
 
-Seventy-six things respond to `Space`, and the counter in the corner tracks
+Seventy-seven things respond to `Space`, and the counter in the corner tracks
 how many you've found:
 
-- **12 ovens** under the benches — the door drops open onto a real cavity:
-  enamel walls, a wire shelf, the elements coming up to heat, and whatever is
-  baking on the tray.
-- **12 fridges** down the side walls, turned in to face the prep benches —
-  edge-hinged doors onto lit interiors with glass shelves, door bins and
-  somebody's mousse setting.
-- **12 stand mixers** — start one and the beater turns in the bowl.
-- **12 taps** — run the water; it drums on the steel.
-- **12 hobs** — bring the rings up to a glow.
+- **12 ovens** built in under the hobs, on the baker's side — a slide-and-hide
+  door that drops flat and then slides away under the oven, onto a real
+  cavity: enamel walls, a fan, a wire shelf, the element coming up to heat,
+  and whatever is baking on the tray. The glass is see-through, so with the
+  light on you can crouch and watch it rise.
+- **12 fridges** down the side walls — rounded, pillowy retro fridges with a
+  chunky chrome handle, turned in to face the prep benches, opening onto lit
+  interiors with a freezer box, glass shelves, door bins and somebody's
+  mousse setting.
+- **12 stand mixers** — tilt-head, in enamel colours, with a chrome hub cap,
+  a steel bowl and a flat beater that turns.
+- **12 taps** — a tall swan neck over an inset stainless sink and drainer;
+  run the water and it drums on the steel.
+- **12 hobs** — black ceramic glass; the zones glow red under the glass.
 - **3 cameras** — go live and the head pans to keep you in frame, tally light
   and all.
 - **3 cloches** on the judging table, **1 bell**, **1 challenge board** that
@@ -59,9 +64,10 @@ how many you've found:
   and **3 deck chairs** out on the grass.
 
 There is also **Noel**, who wanders the tent and the lawn on a fixed round and
-will stop for a word. Ovens, taps and hobs are worked from behind the bench
-where the baker stands; the oven and mixer answer from the front. The entrance flaps open by themselves
-as you approach, and close behind you.
+will stop for a word. Everything on a bench is worked from the baker's side,
+where it would be: stand there and *look at* the thing you want — the tap,
+the hob, the oven door or the mixer — and that is what `Space` works. The
+entrance flaps open by themselves as you approach, and close behind you.
 
 ## Inside a tent, on a lawn
 
@@ -83,29 +89,67 @@ location rather than a backdrop:
 - Clouds drift, trees sway, birds circle, dust turns over in the shafts of
   afternoon sun leaning in through the sunny wall.
 
-The marquee skin is built as cloth rather than as flat planes. The canvas is
-painted as a single welded panel — seam, stitching, slack creases, cloudy
-translucency and grime gathering at the foot — and tiled so the seams land
-every couple of metres, with the same artwork driving a bump map for relief.
-The sheets are then subdivided and sagged between the bays, so the roof dips
-slightly between every truss and the walls bow out between the posts, and a
-scalloped valance hangs off all four eaves.
+The marquee skin is clean, taut PVC: a fine twill you only see up close, a
+little cloudiness where the light comes through unevenly, and a welded seam
+every couple of metres. Overhead, against the sun, a seam is double thickness
+and reads as a slightly darker line — which is how a marquee roof looks from
+inside. The skin is translucent, so the slope and the wall that face the sun
+glow brighter from inside than the ones in shade; that glow rides in the
+vertex colour and drives the emissive term only. The sheets are subdivided
+and sagged between the bays, and a scalloped valance hangs off all four eaves.
 
-No two benches are laid out alike. Each is dressed from a shuffled pool of
-props — bowls, flour and sugar, eggs, a rolling pin, scales, a utensil pot, a
-cooling rack, tubs, a sieve, a piping bag, cake tins, an open recipe book,
-jars — dropped into whatever slots the sink, hob and mixer leave free, seven
-to eleven at a time. The bake might be on a stand, on a board or still in its
-tin, and some bakers leave flour all over the worktop.
+## The benches
 
-The canvas is woven as a twill — the weft steps one thread each pass, which is
-what gives marquee fabric its fine diagonal grain — with welded seams, stitch
-lines and the pull creases that fan off every fixing point, all of it driving a
-bump map as well as the colour.
+Each bench is laid out the way a working kitchen island is, and the way the
+show's are:
+
+- **Painted shaker cabinetry** with real geometry — every door is a frame of
+  rails and stiles round a recessed panel with a bead, not a picture of one —
+  four doors to the judges' side, a tall panel on each end, a pair under the
+  sink and a stack of drawers with cup handles beside the oven.
+- **A chunky oak worktop** with the sink cut right through it.
+- **The sink**: a pressed stainless top with drainer flutes running down to
+  an inset bowl — straight sides, a tight radius into a flat floor, a chrome
+  waste — and a swan-neck tap behind it with its lever on the side.
+- **The hob** over the oven, the **oven** under it, the **mixer** at the back
+  corner turned three-quarters on, the way it is always shot.
+- **Ingredients in storage jars** along the back with the utensil crock,
+  scales or a stack of bowls; the day's work spread across the front — a board
+  and rolling pin, a bowl on the go, eggs, a jug, a sieve, the recipe — and the
+  bake itself on a stand at the judges' end. A tea towel hangs on a rail on
+  the end of the bench and another over the edge of the worktop.
+
+No two are dressed alike: the jars, the back row and the work in progress are
+drawn from shuffled pools, and some bakers leave flour all over the worktop.
 
 Every texture — timber, canvas, grass, gravel, painted shaker panels, brick,
 slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
 `<canvas>` at boot. There are no image files anywhere.
+
+## Trees, hedges and turf
+
+- **Trees** are grown, not placed: a tapered, flared trunk forks into three or
+  four great limbs at different heights; every lobe of the crown is fed by a
+  branch off the nearest limb; and each lobe is hundreds of leaf-cluster cards
+  cut from a painted atlas over a dense dark core, so you never see sky
+  straight through the middle. The cards carry normals pointing out of the
+  crown, which is what makes a cloud of quads light like a rounded mass of
+  foliage. Nine species — oak, beech, horse chestnut, lime, silver birch,
+  Lombardy poplar, cedar of Lebanon in level plates, Scots pine and a weeping
+  willow at the pond — all share one leaf material, tinted per species through
+  vertex colour. The canopies move in the wind in their own vertex shader, and
+  cast dappled shadows.
+- **Hedges** are clipped: a rounded profile swept along the run, pushed about
+  by noise, faced with a leaf texture and its bump map, with leaf cards
+  bristling off it so the outline is soft rather than ruled.
+- **The lawn** is shaded in world space, the blade texture sampled at two
+  scales so it never visibly tiles, with slow tonal drift over it and the
+  mower's stripes — only inside the hedges. Close to, it is real grass:
+  instanced tufts rolled one way in the light stripes and the other in the
+  dark (which is what makes stripes), and longer, uncut grass along the foot of
+  the hedges and the tent skirt.
+- **Beyond the hedge** the park rolls up into the downs, in a loose patchwork
+  of pasture and hay, with copses and woodland belts on the rising ground.
 
 ## The marquee
 
@@ -128,9 +172,11 @@ Mid-afternoon: a strong warm key at about 33° elevation with the fill pulled
 right down (hemisphere 0.26, ambient 0.055, environment 0.20), so the benches
 cast real shadows and the canvas has tone in it instead of blowing to white.
 
-The lamps are clamped straight onto the white roof frame on their own short
-drop arms, as they are in the photographs — there are no black trusses
-spanning the tent — with long white softboxes running up each slope.
+The lamps are studio fresnels — round housings with cooling fins, a lens and
+four barn doors — clamped straight onto the white roof frame on their own
+short drop arms and tipped down at the benches, as they are in the
+photographs. There are no black trusses spanning the tent. The frame itself
+is powder-coated white, and the floor is pale limed oak boards.
 
 ## Cosiness
 
@@ -154,17 +200,35 @@ bowls in the open bays, and cakes on stands along the worktop.
 
 The lawn is mown in stripes. Beyond the boundary hedge — broken by a five-bar
 field gate so you can see through it — there is a pond with reeds, rushes and
-seven ducks drifting on it, the water rippling under a scrolling bump map.
-Trees come in six kinds now: oak, beech, poplar, conifer, spring blossom and
-bare winter branches. A picket fence runs along the lawn in front of the tent.
+seven ducks drifting on it, the water rippling under a scrolling bump map, and
+a weeping willow trailing into it.
 
 ## The walker
 
-Noel is a procedurally animated character, not a canned animation:
+Noel is a procedurally built and procedurally animated character:
 
+- **Head** — a sphere sculpted by a relief function: a long face narrowing to
+  the jaw, high cheekbones with hollows under them, a brow ridge, a nose with
+  a defined tip and nostril wings, a wide thin upper lip and a fuller lower one,
+  a long chin. The eye openings are real holes: the vertices inside each almond
+  are slid out onto its rim, so the lids have a clean edge, and an eyeball with
+  a painted iris sits in the socket behind. The kohl, the smoky lids, the
+  lips with the smirk lifting one corner are painted onto the head through
+  its own uv mapping, so they land on the sculpt.
+- **Hair** — a shell grown over the skull: an inflated dome on top that falls
+  straight past the ears to the jaw, cut to a heavy fringe at the brows in
+  front, each column its own length so fringe, temples and back are one
+  haircut; strand texture with ragged alpha-cut ends; and fine choppy strands
+  over it to break the outline. Dark, strong brows.
+- **Clothes** — a black roll-neck, and a slim ikat suit: a lofted jacket open
+  in a V to the button, with lapels and pocket flaps, tapered sleeves and
+  trousers, every panel's uv measured in metres of cloth so the medallions are
+  the same size wherever they fall and one material dresses the lot. Hands
+  with fingers and silver rings; Chelsea boots with a stacked heel.
 - **Rig** — a joint hierarchy (pelvis → torso → neck → head, shoulder → elbow →
-  hand, hip → knee → ankle → foot) built from boxes, so every limb rotates
-  about a real joint.
+  hand, hip → knee → ankle), so every limb rotates about a real joint. Each
+  segment's parts are batched into it, so the whole man costs a few dozen
+  draw calls.
 - **Gait** — the feet are driven, not the joints. Each foot gets a target: during
   stance it is pinned to the ground and tracks back at exactly walking pace;
   during swing it arcs forward on a smootherstep. The leg is then solved for
@@ -186,10 +250,9 @@ Noel is a procedurally animated character, not a canned animation:
   pauses briefly if you get right in front of him, but the pause is bounded and
   on a cooldown so it can never deadlock. The player can't walk through him
   either.
-- **Clothes** — the ikat is painted at boot: concentric medallions, then every
-  weft row offset sideways to give the feathered edge that makes ikat read as
-  ikat. Because a box face always gets uv 0..1, each garment panel takes its own
-  repeat, sized so one medallion is about 6cm of cloth wherever it lands.
+- **The cloth** — the ikat is painted at boot: concentric medallions, then
+  every weft row offset sideways to give the feathered edge that makes ikat
+  read as ikat.
 
 Verified by driving the navigation at a fixed 60Hz for ten simulated minutes:
 roughly 600m walked, **zero frames with any part of him inside geometry**, and
@@ -215,19 +278,28 @@ One file, one IIFE, following the house engine style guide:
   than 60 Hz doesn't judder.
 - **Collision** — axis-aligned boxes in a flat array, resolved separately on X
   and Z so you slide along the benches instead of stopping dead. Linear search
-  beats any spatial structure at this scale (~75 boxes).
+  beats any spatial structure at this scale (under a hundred boxes).
 - **Environment** — a small PMREM environment is baked from a procedural
   sky-over-grass scene, purely so metal has something to reflect. Its
-  contribution is held at `envMapIntensity = 0.32`: it is a sheen, not a light.
-  Materials that should see no sky at all (the inside of an oven) opt out.
+  contribution is held at `envMapIntensity = 0.20`: it is a sheen, not a light.
+  Polished steel and chrome take more; materials that should see no sky at all
+  (the inside of an oven) opt out.
+- **Static batching** — once the world is built, every mesh that never moves
+  is folded, per material (identical materials are recognised and shared),
+  into a few large meshes, split by patch of ground so culling still works.
+  Things that move are batched inside themselves: an oven door, a fridge door,
+  a camera head, each of Noel's limbs. The tent went from about 4,900 draw
+  calls to about 750 while gaining a great deal of detail.
 - **Depth** — near plane at 0.12 over a 620 m world. The obvious 0.04 gives a
   17500:1 ratio and the depth buffer visibly fights on distant coplanar
   surfaces.
 - **Interaction points** are nudged out of solid geometry after the world is
-  built, so every one of the 76 is somewhere a person can actually stand.
+  built, so every one of the 77 is somewhere a person can actually stand. Where
+  several share a spot, the one you are looking at wins.
 
-`window.TENT` exposes the player, the camera, the prop registry and
-`blocked()` for poking at it from the console.
+`window.TENT` exposes the player, the camera, the prop registry, `blocked()`
+and `pickProp()` for poking at it from the console, plus `freeze()`, `step()`
+and `renderFrame()` for deterministic screenshots.
 
 ## Credits
 
