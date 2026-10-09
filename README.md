@@ -32,6 +32,7 @@ if neither is reachable.
 | `Space` | open / use whatever you're standing next to |
 | `O` | floor plan (top-down, roof lifted off) |
 | `3` | dolly view (3/4 isometric, roof lifted off) |
+| `N` | send Noel off, and bring him back |
 | `1` | back to first person |
 | wheel | zoom, 45°–95° |
 | `H` | hide the key card |
@@ -40,7 +41,7 @@ On a touch screen: one finger looks, the on-screen pad walks, `USE` interacts.
 
 ## What's in there
 
-Seventy-seven things respond to `Space`, and the counter in the corner tracks
+Seventy-nine things respond to `Space`, and the counter in the corner tracks
 how many you've found:
 
 - **12 ovens** built in under the hobs, on the baker's side — a slide-and-hide
@@ -62,6 +63,9 @@ how many you've found:
 - **3 cloches** on the judging table, **1 bell**, **1 challenge board** that
   rewrites itself each time you read it, **2 pantries**, **3 picnic benches**
   and **3 deck chairs** out on the grass.
+- **The ducks**, from the end of the jetty down at the pond: throw them
+  something and every duck on the water paddles over. And **a bench** on the
+  bank to sit on afterwards.
 
 There is also **Noel**, who wanders the tent and the lawn on a fixed round and
 will stop for a word. Everything on a bench is worked from the baker's side,
@@ -78,8 +82,16 @@ location rather than a backdrop:
   trees, hedges and sky read straight through them, sharp through the windows
   and soft through the canvas.
 - You can walk out of the entrance and all the way round the outside. The lawn
-  runs to a hedge boundary, with trees, flower borders, a gravel path, picnic
-  benches and deck chairs.
+  runs to a hedge boundary, with trees, cottage-garden borders (dark mounded
+  soil in timber edging, foxgloves and lupins standing up out of the clumps),
+  a gravel path, and garden furniture in weathered, silvered timber:
+  pub-garden picnic tables with splayed A-frame legs and gaps between the
+  boards, and proper striped deckchairs — a back frame and a seat frame that
+  cross and pivot, a notched strut, round rails, and the canvas slung from the
+  top rail to the front one so it sags into a seat.
+- **Through the field gate** in the west hedge — a pair of five-bar gates that
+  swing open as you come up — a trodden path runs across a paddock of long
+  meadow grass and wild flowers to the pond.
 - **Welford Park house** stands across the park to the east — red brick, stone
   quoins and dressings, a hipped slate roof with dormers and four chimney
   stacks, a lower service wing and a walled forecourt — with the church tower
@@ -198,10 +210,28 @@ bowls in the open bays, and cakes on stands along the worktop.
 
 ## Out across the park
 
-The lawn is mown in stripes. Beyond the boundary hedge — broken by a five-bar
-field gate so you can see through it — there is a pond with reeds, rushes and
-seven ducks drifting on it, the water rippling under a scrolling bump map, and
-a weeping willow trailing into it.
+The lawn is mown in stripes. Beyond it, through the field gate, the paddock is
+left long — straw among the green, seeding grasses, buttercups, ox-eye daisies,
+clover and cow parsley — closed in by untidy field hedgerows.
+
+**The pond** is set into the ground, not painted on it: a grassy lip, a muddy
+margin sloping down to the waterline, a shelf of shallows, then deep water.
+The water is clear and brown over the shallows and dark in the middle, and it
+**reflects** — when you are out on that side of the garden the scene is drawn
+a second time from a camera mirrored in the water plane, and the pond samples
+that picture through its ripples, more strongly the lower you look across it,
+so the willows, the sky and the ducks all hang upside down in it. Round it:
+clumps of reeds that move in the wind, bulrushes, yellow flag iris, drifts of
+water lilies with a few in flower, mossy stones half sunk in the bank, two
+weeping willows, a chestnut and a birch, a weathered jetty with a rail and a
+lifebuoy, a floating duck house, and a bench looking out over the water.
+
+The **ducks** are mallards — drakes with bottle-green heads, white collars,
+chestnut breasts, grey flanks and the blue speculum; mottled brown hens — and
+one hen with five ducklings in a line behind her. Each paddles off towards a
+spot of its own choosing, turns gently, now and then stops to dabble (head
+under, tail up), and pushes out a wake as it goes; rings spread on the water
+where something rises. Feed them from the jetty and they all come over.
 
 ## The walker
 
@@ -278,12 +308,16 @@ One file, one IIFE, following the house engine style guide:
   than 60 Hz doesn't judder.
 - **Collision** — axis-aligned boxes in a flat array, resolved separately on X
   and Z so you slide along the benches instead of stopping dead. Linear search
-  beats any spatial structure at this scale (under a hundred boxes).
+  beats any spatial structure at this scale (about a hundred boxes).
 - **Environment** — a small PMREM environment is baked from a procedural
   sky-over-grass scene, purely so metal has something to reflect. Its
   contribution is held at `envMapIntensity = 0.20`: it is a sheen, not a light.
   Polished steel and chrome take more; materials that should see no sky at all
   (the inside of an oven) opt out.
+- **Shadows go where you go** — the sun's shadow map covers 80m round the
+  player, so the pond gets shadows as well as the tent; its centre steps a
+  whole shadow texel at a time in the light's own frame, so edges don't crawl
+  as you walk.
 - **Static batching** — once the world is built, every mesh that never moves
   is folded, per material (identical materials are recognised and shared),
   into a few large meshes, split by patch of ground so culling still works.
@@ -294,7 +328,7 @@ One file, one IIFE, following the house engine style guide:
   17500:1 ratio and the depth buffer visibly fights on distant coplanar
   surfaces.
 - **Interaction points** are nudged out of solid geometry after the world is
-  built, so every one of the 77 is somewhere a person can actually stand. Where
+  built, so every one of the 79 is somewhere a person can actually stand. Where
   several share a spot, the one you are looking at wins.
 
 `window.TENT` exposes the player, the camera, the prop registry, `blocked()`
