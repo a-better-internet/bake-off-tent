@@ -982,7 +982,7 @@ sun.shadow.camera.left = -34; sun.shadow.camera.right  = 34;
 sun.shadow.camera.top  =  40; sun.shadow.camera.bottom = -40;
 sun.shadow.camera.near = 1;   sun.shadow.camera.far    = 150;
 sun.shadow.bias = -0.0012;
-sun.shadow.normalBias = 0.02;
+sun.shadow.normalBias = 0.055;
 sun.target.position.copy(CTR);
 scene.add(sun); scene.add(sun.target);
 // The shadow map covers 80m round wherever you are (the tent, or down at
@@ -2815,13 +2815,14 @@ function groundAt(x, z){
 
   // the shell: four walls with their openings, and the centre breaking forward
   { const fh = holesFor('s').concat([{ x:0, y:PLINTH + 1.55, w:1.6, h:3.1 }]);   // and the front door
-    const f = wallSlab(BW2, EAVE3, WT, fh, brickW); f.position.z = BD2/2 - WT; g.add(f);
-    const n = wallSlab(BW2, EAVE3, WT, holesFor('n'), brickW);
-    n.position.z = -BD2/2 + WT; n.rotation.y = Math.PI; g.add(n);
-    const e = wallSlab(BD2, EAVE3, WT, holesFor('e'), brickW);
-    e.position.x = BW2/2 - WT; e.rotation.y = Math.PI/2; g.add(e);
-    const w2 = wallSlab(BD2, EAVE3, WT, holesFor('w'), brickW);
-    w2.position.x = -BW2/2 + WT; w2.rotation.y = -Math.PI/2; g.add(w2);
+    const OL = .26, LT = WT - OL;        // outer leaf of brick, inner leaf of plaster
+    const f = wallSlab(BW2, EAVE3, OL, fh, brickW); f.position.z = BD2/2 - OL; g.add(f);
+    const n = wallSlab(BW2, EAVE3, OL, holesFor('n'), brickW);
+    n.position.z = -BD2/2 + OL; n.rotation.y = Math.PI; g.add(n);
+    const e = wallSlab(BD2, EAVE3, OL, holesFor('e'), brickW);
+    e.position.x = BW2/2 - OL; e.rotation.y = Math.PI/2; g.add(e);
+    const w2 = wallSlab(BD2, EAVE3, OL, holesFor('w'), brickW);
+    w2.position.x = -BW2/2 + OL; w2.rotation.y = -Math.PI/2; g.add(w2);
     // the break-front, standing proud of the middle three bays
     const bh = WIN.filter(o => o.face === 's' && o.mid).map(o => ({ x:o.x, y:o.y, w:o.w + .1, h:o.h + .1 }))
       .concat([{ x:0, y:PLINTH + 1.55, w:1.6, h:3.1 }]);
@@ -2830,23 +2831,24 @@ function groundAt(x, z){
       const rt = wallSlab(BRKD, EAVE3, .02, null, brickW);
       rt.position.set(sx*BRK/2, 0, BD2/2 + BRKD/2); rt.rotation.y = sx*Math.PI/2; g.add(rt);
     }
-    // and a skin of plaster on the room side, so the brick stays outdoors
-    const LT = .012, lin = new THREE.MeshStandardMaterial({ color:0xe7dfcc, roughness:.96 });
-    const lf = wallSlab(BW2, EAVE3, LT, fh, lin); lf.position.z = IHD - LT; g.add(lf);
+    // the inner leaf, plastered: it fills the wall from the room face right
+    // back to the brick, so there is one surface and never two in a plane
+    const lin = new THREE.MeshStandardMaterial({ color:0xd8ccae, roughness:.96 });
+    const lf = wallSlab(BW2, EAVE3, LT, fh, lin); lf.position.z = IHD; g.add(lf);
     const ln = wallSlab(BW2, EAVE3, LT, holesFor('n'), lin);
-    ln.position.z = -IHD + LT; ln.rotation.y = Math.PI; g.add(ln);
+    ln.position.z = -IHD; ln.rotation.y = Math.PI; g.add(ln);
     const le = wallSlab(BD2, EAVE3, LT, holesFor('e'), lin);
-    le.position.x = IHW - LT; le.rotation.y = Math.PI/2; g.add(le);
+    le.position.x = IHW; le.rotation.y = Math.PI/2; g.add(le);
     const lw = wallSlab(BD2, EAVE3, LT, holesFor('w'), lin);
-    lw.position.x = -IHW + LT; lw.rotation.y = -Math.PI/2; g.add(lw);
+    lw.position.x = -IHW; lw.rotation.y = -Math.PI/2; g.add(lw);
   }
   // plinth, string course and the modillion cornice
-  box(BW2 + .5, PLINTH, BD2 + .5, stoneD, 0, PLINTH/2, 0, g);
-  box(BRK + .5, PLINTH, BD2 + BRKD*2 + .5, stoneD, 0, PLINTH/2, 0, g);
-  for(const [w, dd] of [[BW2 + .22, BD2 + .22], [BRK + .22, BD2 + BRKD*2 + .22]]){
-    box(w, .16, dd, stone, 0, PLINTH + S1, 0, g);
-    box(w, .34, dd, paint, 0, EAVE3 + .17, 0, g);                        // cornice
-    box(w + .3, .14, dd + .3, paint, 0, EAVE3 + .4, 0, g);
+  box(BW2 + .5, PLINTH - .18, BD2 + .5, stoneD, 0, (PLINTH - .18)/2, 0, g);
+  box(BRK + .5, PLINTH - .24, BD2 + BRKD*2 + .5, stoneD, 0, (PLINTH - .24)/2, 0, g);
+  for(const [w, dd, k] of [[BW2 + .22, BD2 + .22, 0], [BRK + .22, BD2 + BRKD*2 + .22, .011]]){
+    box(w, .16 - k*2, dd, stone, 0, PLINTH + S1, 0, g);
+    box(w, .34 - k*2, dd, paint, 0, EAVE3 + .17, 0, g);                  // cornice
+    box(w + .3, .14 - k*2, dd + .3, paint, 0, EAVE3 + .4, 0, g);
   }
   for(let i=0;i<Math.round(BW2/.62);i++){                                 // modillions
     const mx = -BW2/2 + .31 + i*.62;
@@ -2857,7 +2859,7 @@ function groundAt(x, z){
   for(let i=0;i<Math.round(BRK/.62);i++)
     box(.16, .2, .3, paint, -BRK/2 + .31 + i*.62, EAVE3 + .22, BD2/2 + BRKD + .12, g);
   // Archer's Ionic order across the centre, carrying the pediment
-  for(const px of [-BRK/2 + .5, -.76, .76, BRK/2 - .5]){
+  for(const px of [-BRK/2 + .42, -1.62, 1.62, BRK/2 - .42]){
     const col = mesh(new THREE.CylinderGeometry(.3, .33, EAVE3 - PLINTH - 1.2, 16),
       paint, px, PLINTH + (EAVE3 - PLINTH - 1.2)/2 + .3, BD2/2 + BRKD + .22, g);
     shadeOn(col, true, false);
@@ -2894,14 +2896,15 @@ function groundAt(x, z){
   // the doorcase: a panelled door under a pediment on consoles, with steps
   const FRONTDOOR = { };
   { const d = new THREE.Group(); d.position.set(0, PLINTH, BD2/2 + BRKD + .04); g.add(d);
-    box(2.5, 3.5, .3, stone, 0, 1.75, 0, d);
-    const leaf = new THREE.Group(); leaf.position.set(-.75, 0, .08); d.add(leaf);
+    const sur = wallSlab(2.5, 3.5, .34, [{ x:0, y:1.56, w:1.64, h:3.12 }], stone);
+    sur.position.z = -.3; d.add(sur);                        // a surround you can walk through
+    const leaf = new THREE.Group(); leaf.position.set(-.75, 0, -.06); d.add(leaf);
     const lf = new THREE.Group(); lf.position.set(.75, 0, 0); leaf.add(lf);
     box(1.5, 2.9, .12, new THREE.MeshStandardMaterial({ color:0x3c4a52, roughness:.55 }), 0, 1.45, 0, lf);
     for(let i=0;i<6;i++) box(.5, .62, .04, new THREE.MeshStandardMaterial({ color:0x47565e, roughness:.5 }),
       -.34 + (i%2)*.68, .5 + ((i/2)|0)*.78, .07, lf);
     mesh(G.sphere, M.copper, .55, 1.4, .1, lf).scale.setScalar(.07);
-    FRONTDOOR.d = addDoor(leaf, 'y', -1.9, 1.6);
+    FRONTDOOR.d = addDoor(leaf, 'y', 1.95, 1.6);             // it opens inwards, as it should
     AUTO.push({ door:FRONTDOOR.d, x:EST.x, z:EST.z + BD2/2 + BRKD + 1.6, r:4.5 });
     const fan = mesh(new THREE.CircleGeometry(.72, 18, 0, Math.PI), new THREE.MeshStandardMaterial({
       color:0x2b343a, roughness:.1, emissive:0xffd9a0, emissiveIntensity:.2 }), 0, 2.9, .1, d);
@@ -3029,7 +3032,7 @@ function groundAt(x, z){
   const oakFloor = (function(){
     const t = M.wood.map.clone(); t.needsUpdate = true;
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(7, 7);
-    return new THREE.MeshStandardMaterial({ map:t, color:0xa8824f, roughness:.5 });
+    return new THREE.MeshStandardMaterial({ map:t, color:0x8a6236, roughness:.52 });
   })();
   const flagM = (function(){
     const c = cvs(256,256), x2 = c.getContext('2d');
@@ -3043,10 +3046,24 @@ function groundAt(x, z){
       x2.beginPath(); x2.arc(rnd()*256, rnd()*256, rr(1,7), 0, 6.3); x2.fill(); }
     return new THREE.MeshStandardMaterial({ map:finish(c, 8, 8), roughness:.72 });
   })();
-  const plasterM = new THREE.MeshStandardMaterial({ color:0xeae3d4, roughness:.95 });
-  const woodw = new THREE.MeshStandardMaterial({ color:0xe8e2d2, roughness:.6 });   // painted joinery
-  const woodwD = new THREE.MeshStandardMaterial({ color:0xd3cab4, roughness:.66 });  // the sunk margin round a panel
+  const plasterM = new THREE.MeshStandardMaterial({ color:0xe2dac7, roughness:.95 });
+  const woodw = new THREE.MeshStandardMaterial({ color:0xdbd2bb, roughness:.6 });   // painted joinery
+  const woodwD = new THREE.MeshStandardMaterial({ color:0xc3b99f, roughness:.66 });  // the sunk margin round a panel
   const oakw  = new THREE.MeshStandardMaterial({ color:0x6b4a2c, roughness:.55 });
+  const oakPanel = (function(){                                 // wainscot oak, with its grain
+    const t = M.wood.map.clone(); t.needsUpdate = true;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(.55, .55);
+    return new THREE.MeshStandardMaterial({ map:t, color:0x87602f, roughness:.58 });
+  })();
+  const oakDark = (function(){
+    const t = M.wood.map.clone(); t.needsUpdate = true;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(.5, .5);
+    return new THREE.MeshStandardMaterial({ map:t, color:0x66461f, roughness:.62 });
+  })();
+  // and the colours the painted rooms are hung in
+  const wallSage = new THREE.MeshStandardMaterial({ color:0x6d8369, roughness:.95 });
+  const wallRed  = new THREE.MeshStandardMaterial({ color:0x6e3229, roughness:.95 });
+  const wallOchre= new THREE.MeshStandardMaterial({ color:0xa8813b, roughness:.95 });
   const gilt  = new THREE.MeshStandardMaterial({ color:0xc9a44c, roughness:.3, metalness:.75 });
   gilt.userData.env = .7;
   const mirrorM = (function(){
@@ -3095,18 +3112,21 @@ function groundAt(x, z){
 
   // panelled walls: a dado, fielded panels above, a cornice — in runs with
   // gaps left for the doorways
-  function panelFace(px, py, pz, w, h, rotY, mat, rail){
+  function panelFace(px, py, pz, w, h, rotY, mat, rail, shade){
     const f = new THREE.Group(); f.position.set(px, py, pz); f.rotation.y = rotY; house.add(f);
-    box(w, h, .04, mat, 0, h/2, -.02, f);
+    const sh2 = shade || woodwD;
     const SK = .26, DADO = 1.0, CORN = h - .3;
+    // the ground the panelling is set on, standing 2cm proud of the wall
+    // behind it -- never in its plane, which is what makes a room flicker
+    box(w, h - SK + .1, .025, mat, 0, SK + (h - SK + .1)/2 - .05, -.012, f);
     box(w, SK, .08, rail, 0, SK/2, .04, f);
     box(w, .1, .1, rail, 0, DADO, .05, f);
     box(w, .22, .14, rail, 0, CORN + .14, .07, f);
     const cells = (y0, y1, n) => { const cw = w/n;
       for(let i=0;i<n;i++){
         const px2 = -w/2 + cw/2 + i*cw;
-        box(cw - .1, y1 - y0 - .08, .02, woodwD, px2, (y0+y1)/2, .024, f);        // the sunk margin
-        box(cw - .18, y1 - y0 - .16, .026, rail, px2, (y0+y1)/2, .034, f);        // the fielded panel
+        box(cw - .1, y1 - y0 - .08, .02, sh2, px2, (y0+y1)/2, .024, f);          // the sunk margin
+        box(cw - .18, y1 - y0 - .16, .026, mat, px2, (y0+y1)/2, .034, f);         // the fielded panel
       } };
     if(w > .7){
       cells(SK + .04, DADO - .07, Math.max(1, Math.round(w/.85)));
@@ -3115,7 +3135,7 @@ function groundAt(x, z){
     return f;
   }
   // a run along x (facing ±z) or along z (facing ±x), minus the gaps
-  function panelRun(dir, fixed, a0, a1, face, gaps, mat, rail, h){
+  function panelRun(dir, fixed, a0, a1, face, gaps, mat, rail, h, shade){
     const segs = [[a0, a1]];
     for(const [g0, g1] of gaps || []){
       for(let i=segs.length-1;i>=0;i--){
@@ -3129,8 +3149,8 @@ function groundAt(x, z){
     for(const [s0, s1] of segs){
       if(s1 - s0 < .08) continue;
       const c = (s0 + s1)/2, w = s1 - s0;
-      if(dir === 'x') panelFace(c, PLINTH, fixed, w, h, face > 0 ? 0 : Math.PI, mat, rail);
-      else panelFace(fixed, PLINTH, c, w, h, face > 0 ? Math.PI/2 : -Math.PI/2, mat, rail);
+      if(dir === 'x') panelFace(c, PLINTH, fixed, w, h, face > 0 ? 0 : Math.PI, mat, rail, shade);
+      else panelFace(fixed, PLINTH, c, w, h, face > 0 ? Math.PI/2 : -Math.PI/2, mat, rail, shade);
     }
   }
   // the partitions themselves, with their doorways
@@ -3147,25 +3167,25 @@ function groundAt(x, z){
     }
     for(const [s0, s1] of segs){
       const c = (s0 + s1)/2, w = s1 - s0;
-      if(dir === 'x') shadeOn(box(w, S1, SPW, plasterM, c, PLINTH + S1/2, fixed, house), false, true);
-      else shadeOn(box(SPW, S1, w, plasterM, fixed, PLINTH + S1/2, c, house), false, true);
+      if(dir === 'x') shadeOn(box(w, S1 + .08, SPW, plasterM, c, PLINTH + S1/2, fixed, house), false, true);
+      else shadeOn(box(SPW, S1 + .08, w, plasterM, fixed, PLINTH + S1/2, c, house), false, true);
       // and over each doorway
     }
     for(const [g0, g1] of gaps || []){
       const c = (g0 + g1)/2, w = g1 - g0;
-      if(dir === 'x') box(w, S1 - DOORH, SPW, plasterM, c, PLINTH + DOORH + (S1 - DOORH)/2, fixed, house);
-      else box(SPW, S1 - DOORH, w, plasterM, fixed, PLINTH + DOORH + (S1 - DOORH)/2, c, house);
+      if(dir === 'x') box(w, S1 - DOORH + .05, SPW, plasterM, c, PLINTH + DOORH + (S1 - DOORH + .05)/2, fixed, house);
+      else box(SPW, S1 - DOORH + .05, w, plasterM, fixed, PLINTH + DOORH + (S1 - DOORH + .05)/2, c, house);
     }
   }
   // a cased opening: architrave either side and over
   function doorcase(dir, fixed, c, w){
     const t = SPW + .1;
     for(const s of [-1, 1]){
-      if(dir === 'x') box(.14, DOORH + .14, t, woodw, c + s*(w/2 + .07), PLINTH + (DOORH + .14)/2, fixed, house);
-      else box(t, DOORH + .14, .14, woodw, fixed, PLINTH + (DOORH + .14)/2, c + s*(w/2 + .07), house);
+      if(dir === 'x') box(.14, DOORH + .14, t, woodw, c + s*(w/2 + .055), PLINTH + (DOORH + .14)/2, fixed, house);
+      else box(t, DOORH + .14, .14, woodw, fixed, PLINTH + (DOORH + .14)/2, c + s*(w/2 + .055), house);
     }
-    if(dir === 'x') box(w + .28, .16, t, woodw, c, PLINTH + DOORH + .08, fixed, house);
-    else box(t, .16, w + .28, woodw, fixed, PLINTH + DOORH + .08, c, house);
+    if(dir === 'x') box(w + .28, .16, t, woodw, c, PLINTH + DOORH + .05, fixed, house);
+    else box(t, .16, w + .28, woodw, fixed, PLINTH + DOORH + .05, c, house);
   }
 
   const DOORS2 = {                                            // where you can walk through
@@ -3186,12 +3206,12 @@ function groundAt(x, z){
   doorcase('x', 1.225, (DOORS2.mornDine[0] + DOORS2.mornDine[1])/2, 1.15);
 
   // the wall between vestibule and stair hall, with its three arches
-  { const aw = wallSlab(6.4 + SPW*2, S1, SPW, [
+  { const aw = wallSlab(6.4 + SPW*2, S1 + .05, SPW, [
       { arch:true, x:-2.15, y:2.0, y0:0, w:1.5 }, { arch:true, x:0, y:2.15, y0:0, w:1.7 },
       { arch:true, x:2.15, y:2.0, y0:0, w:1.5 }], plasterM);
-    aw.position.set(0, PLINTH, 1.65); house.add(aw);
+    aw.position.set(0, PLINTH - .04, 1.65); house.add(aw);
     for(const [ax, aw2, ah] of [[-2.15, 1.5, 2.0], [0, 1.7, 2.15], [2.15, 1.5, 2.0]]){
-      for(const s of [-1,1]) box(.16, ah, SPW + .12, woodw, ax + s*(aw2/2 + .08), PLINTH + ah/2, 1.875, house);
+      for(const s of [-1,1]) box(.16, ah, SPW + .12, woodw, ax + s*(aw2/2 + .065), PLINTH + ah/2, 1.875, house);
       const arc = mesh(new THREE.CylinderGeometry(aw2/2 + .08, aw2/2 + .08, SPW + .12, 20, 1, true, 0, Math.PI),
         woodw, ax, PLINTH + ah, 1.875, house);
       arc.rotation.x = Math.PI/2; arc.rotation.y = Math.PI;
@@ -3203,28 +3223,32 @@ function groundAt(x, z){
   const PH = S1 - .1;
   const winGaps = (face) => WIN.filter(o => o.face === face && o.r === 0)
     .map(o => [o.x - o.w/2 - .34, o.x + o.w/2 + .34]);
-  panelRun('x', IHD - .02, -3.2, 3.2, -1, [[-.95, .95]].concat(winGaps('s')), plasterM, woodw, PH);
-  panelRun('z', SPINE - SPW/2 - .02, 2.1, IHD, -1, [DOORS2.vestE], plasterM, woodw, PH);
-  panelRun('z', -SPINE + SPW/2 + .02, 2.1, IHD, 1, [DOORS2.vestW, [3.0, 5.6]], plasterM, woodw, PH);
-  panelRun('x', -IHD + .02, -3.2, 3.2, 1, winGaps('n'), plasterM, woodw, PH);      // hall, back
-  panelRun('z', SPINE - SPW/2 - .02, -IHD, 1.65, -1, [DOORS2.hallE], plasterM, woodw, PH);
-  panelRun('z', -SPINE + SPW/2 + .02, -IHD, 1.65, 1, [DOORS2.hallW], plasterM, woodw, PH);
+  panelRun('x', IHD - .02, -3.2, 3.2, -1, [[-.95, .95]].concat(winGaps('s')), oakPanel, oakDark, PH, woodwD);
+  panelRun('z', SPINE - SPW/2 - .02, 2.1, IHD, -1, [DOORS2.vestE], oakPanel, oakDark, PH, woodwD);
+  panelRun('z', -SPINE + SPW/2 + .02, 2.1, IHD, 1, [DOORS2.vestW, [3.0, 5.6]], oakPanel, oakDark, PH, woodwD);
+  panelRun('x', -IHD + .02, -3.2, 3.2, 1, winGaps('n'), oakPanel, oakDark, PH, woodwD);   // hall, back
+  panelRun('z', SPINE - SPW/2 - .02, -IHD, 1.65, -1, [DOORS2.hallE], oakPanel, oakDark, PH, woodwD);
+  panelRun('z', -SPINE + SPW/2 + .02, -IHD, 1.65, 1, [DOORS2.hallW], oakPanel, oakDark, PH, woodwD);
   for(const R of [ROOM.draw, ROOM.libr, ROOM.dine, ROOM.morn]){
     // the stretch of wall each chimneypiece needs, left out of the panelling
+    const FLD = R === ROOM.libr ? oakPanel : R === ROOM.draw ? wallSage
+              : R === ROOM.dine ? wallRed : wallOchre;
+    const RL  = R === ROOM.libr ? oakDark : woodw;
+    const SHD = woodwD;
     const chimN = R === ROOM.morn ? [[-7.0, -4.0]] : [];
     const chimW = R === ROOM.draw ? [[.3, 3.3]] : R === ROOM.libr ? [[-3.0, -.05]] : [];
     const chimE = R === ROOM.dine ? [[-2.3, .7]] : [];
     panelRun('x', R.z1 - .02, R.x0, R.x1, -1,
-      (R === ROOM.draw || R === ROOM.morn) ? winGaps('s') : [R === ROOM.libr ? DOORS2.drawLib : DOORS2.mornDine], plasterM, woodw, PH);
+      (R === ROOM.draw || R === ROOM.morn) ? winGaps('s') : [R === ROOM.libr ? DOORS2.drawLib : DOORS2.mornDine], FLD, RL, PH, SHD);
     panelRun('x', R.z0 + .02, R.x0, R.x1, 1,
       (R === ROOM.draw ? [DOORS2.drawLib] : R === ROOM.morn ? [DOORS2.mornDine] : winGaps('n'))
-        .concat(chimN), plasterM, woodw, PH);
+        .concat(chimN), FLD, RL, PH, SHD);
     panelRun('z', R.x0 + .02, R.z0, R.z1, 1,
       (R.x0 > 0 ? [R === ROOM.draw ? DOORS2.vestE : DOORS2.hallE] : winGaps('w'))
-        .concat(chimW), plasterM, woodw, PH);
+        .concat(chimW), FLD, RL, PH, SHD);
     panelRun('z', R.x1 - .02, R.z0, R.z1, -1,
       (R.x1 < 0 ? [R === ROOM.morn ? DOORS2.vestW : DOORS2.hallW] : winGaps('e'))
-        .concat(chimE), plasterM, woodw, PH);
+        .concat(chimE), FLD, RL, PH, SHD);
   }
 
   // window joinery on the inside: a reveal, shutters, and a pelmet
@@ -3270,8 +3294,8 @@ function groundAt(x, z){
     const OW = W3 - .5, OH = H3 - .3;                         // the opening through it
     const BW4 = W3 + .9, HGT = CEIL - PLINTH;
     for(const s of [-1,1])                                    // the breast: two piers and a head
-      box((BW4 - OW)/2, HGT, BR, plasterM, s*(OW/2 + (BW4 - OW)/4), HGT/2, BR/2, f);
-    box(BW4, HGT - OH, BR, plasterM, 0, OH + (HGT - OH)/2, BR/2, f);
+      box((BW4 - OW)/2, OH, BR + .05, plasterM, s*(OW/2 + (BW4 - OW)/4), OH/2, BR/2 - .025, f);
+    box(BW4, HGT - OH, BR + .05, plasterM, 0, OH + (HGT - OH)/2, BR/2 - .025, f);
     box(BW4 + .1, .18, BR + .08, woodw, 0, HGT - .22, BR/2, f);                    // cornice return
     // the sooted recess, with the grate and what is left of the fire
     const soot = new THREE.MeshStandardMaterial({ color:0x15120f, roughness:.98 });
@@ -3314,7 +3338,7 @@ function groundAt(x, z){
         box(.36, .1, .2, stoneM, px3, H3 - .09, FA + .07, f);
       }
     }
-    shadeOn(box(W3 + .5, .05, .62, slipM, 0, .025, FA + .31, f), false, true);     // the hearth
+    shadeOn(box(W3 + .5, .08, .62, slipM, 0, .02, FA + .31, f), false, true);      // the hearth
     // an overmantel looking-glass in a gilt frame
     if(kind !== 'plain'){
       box(1.5, 1.7, .03, mirrorM, 0, H3 + 1.3, FA + .01, f);
@@ -3327,63 +3351,99 @@ function groundAt(x, z){
     return f;
   }
 
-  // the open-well stair, in three flights round the well
+  // the open-well stair: two flights and a landing, as the listing has it,
+  // with turned balusters, closed strings, panelled newels and a gallery
   (function stair(){
-    const RISE = .168, GO = .3, SW = 1.6;
+    const RISE = (S1 + .22)/20, GO = .28, SW = 1.6, NOSE = .035, RH = .88;
+    const TOP = 20*RISE;                                     // it lands on the first floor
     const st = new THREE.Group(); st.position.set(0, PLINTH, 0); house.add(st);
-    const tread = (x, y, z, w, d2, along) => {
-      shadeOn(box(along === 'z' ? w : d2, .06, along === 'z' ? d2 : w, oakw, x, y, z, st), true, true);
-      box(along === 'z' ? w : GO, RISE, along === 'z' ? GO : w, woodw, x, y - RISE/2, z - (along === 'z' ? .0 : 0), st);
-    };
-    let y = 0;
-    for(let i=0;i<10;i++){ y += RISE; tread(2.3, y, -1.2 - i*GO - GO/2, SW, GO, 'z'); }   // east flight
-    const LY1 = y;
-    shadeOn(box(SW, .1, 1.3, oakw, 2.3, LY1, -4.85, st), true, true);                    // half landing
-    for(let i=0;i<2;i++){ y += RISE; shadeOn(box(GO, .06, 1.3, oakw, 1.5 - i*GO - GO/2, y, -4.85, st), true, true); }
-    shadeOn(box(SW, .1, 1.3, oakw, -2.3, y, -4.85, st), true, true);
-    const LY2 = y;
-    for(let i=0;i<10;i++){ y += RISE; tread(-2.3, y, -4.2 + i*GO + GO/2, SW, GO, 'z'); }  // west flight
-    shadeOn(box(SW, .14, 1.4, oakw, -2.3, y, -.5, st), true, true);                      // the gallery it reaches
-    // strings, newels, turned balusters and a mahogany handrail
     const balGeo = new THREE.LatheGeometry([
-      new THREE.Vector2(.035,0), new THREE.Vector2(.035,.06), new THREE.Vector2(.018,.1),
-      new THREE.Vector2(.052,.2), new THREE.Vector2(.046,.34), new THREE.Vector2(.02,.46),
-      new THREE.Vector2(.03,.56), new THREE.Vector2(.028,.7), new THREE.Vector2(.034,.78)], 10);
-    const rail = (x0, y0, z0, x1, y1, z1) => {
+      new THREE.Vector2(.035, 0), new THREE.Vector2(.035, .06), new THREE.Vector2(.018, .1),
+      new THREE.Vector2(.052, .2), new THREE.Vector2(.046, .34), new THREE.Vector2(.02, .46),
+      new THREE.Vector2(.03, .56), new THREE.Vector2(.028, .7), new THREE.Vector2(.034, .78)], 10);
+    const BALH = .78;
+    // a board between two points, turned to lie along them
+    const rake = (mat, w, h, x0, y0, z0, x1, y1, z1, cast) => {
       const d2 = v3(x1 - x0, y1 - y0, z1 - z0), len = d2.length();
-      const m = mesh(G.unit, oakw, (x0+x1)/2, (y0+y1)/2, (z0+z1)/2, st);
-      m.scale.set(.1, .09, len);
-      m.quaternion.setFromUnitVectors(v3(0,0,1), d2.clone().normalize());
-      shadeOn(m, true, false);
-      const n = Math.max(2, Math.round(len/.22));
-      for(let i=0;i<n;i++){
-        const t = (i + .5)/n;
-        const b4 = mesh(balGeo, woodw, x0 + (x1-x0)*t, y0 + (y1-y0)*t - .78, z0 + (z1-z0)*t, st);
-      }
+      const m = mesh(G.unit, mat, (x0+x1)/2, (y0+y1)/2, (z0+z1)/2, st);
+      m.scale.set(w, h, len);
+      m.quaternion.setFromUnitVectors(v3(0, 0, 1), d2.clone().normalize());
+      return shadeOn(m, cast !== false, true);
     };
     const newel = (x, y0, z) => {
-      shadeOn(box(.18, .95, .18, oakw, x, y0 + .48, z, st), true, false);
-      for(const s of [-1,1]) box(.14, .5, .02, woodw, x + s*.1, y0 + .5, z, st);
-      mesh(G.sphere, oakw, x, y0 + 1.02, z, st).scale.setScalar(.13);
+      shadeOn(box(.17, RH + .22, .17, oakw, x, y0 + (RH + .22)/2, z, st), true, true);
+      for(const s2 of [-1,1]){
+        box(.13, RH - .34, .015, woodwD, x + s2*.093, y0 + RH/2, z, st);
+        box(.015, RH - .34, .13, woodwD, x, y0 + RH/2, z + s2*.093, st);
+      }
+      box(.23, .07, .23, oakw, x, y0 + RH + .25, z, st);
+      mesh(G.sphere, oakw, x, y0 + RH + .4, z, st).scale.setScalar(.115);
     };
-    newel(1.5, 0, -1.2); newel(1.5, LY1, -4.3); newel(-1.5, LY2, -4.3); newel(-1.5, y, -.9);
-    rail(1.5, .9, -1.2, 1.5, LY1 + .9, -4.25);
-    rail(1.5, LY1 + .9, -4.3, -1.5, LY2 + .9, -4.3);
-    rail(-1.5, LY2 + .9, -4.25, -1.5, y + .9, -1.1);
-    rail(-1.5, y + .9, -1.1, -3.0, y + .9, -1.1);
-    // the well is open: a rope across the foot of the flight, as in a house
-    // that lets people in
-    for(const zz of [-1.2]){
-      shadeOn(box(.09, .95, .09, M.copper, 1.5, .48, zz + .02, st), true, false);
-      shadeOn(box(.09, .95, .09, M.copper, 3.1, .48, zz + .02, st), true, false);
-      const rp = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
-        v3(1.5, .86, zz + .02), v3(2.3, .66, zz + .02), v3(3.1, .86, zz + .02)]), 10, .025, 6),
-        new THREE.MeshStandardMaterial({ color:0x8a2b36, roughness:.9 }));
-      st.add(rp);
+    // a straight flight of n risers running along z from the face zf0
+    function flight(cx, zf0, dz, n, y0, balX){
+      for(let i=0;i<n;i++){
+        const zf = zf0 + dz*i*GO, y = y0 + (i + 1)*RISE;
+        box(SW, RISE, .035, woodw, cx, y - RISE/2, zf + dz*.018, st);                 // riser
+        shadeOn(box(SW, .055, GO + NOSE, oakw, cx, y - .027,
+                    zf + dz*(GO - NOSE)/2, st), true, true);                          // tread
+        box(SW, .022, .022, oakw, cx, y - .062, zf - dz*.012, st);                    // its nosing mould
+      }
+      const yT = y0 + n*RISE, zT = zf0 + dz*n*GO;
+      for(const s2 of [-1,1])                                                         // closed strings
+        rake(oakw, .05, .36, cx + s2*(SW/2 + .025), y0 - .06, zf0,
+                             cx + s2*(SW/2 + .025), yT - .06, zT);
+      rake(plasterM, SW, .04, cx, y0 - .2, zf0, cx, yT - .2, zT, false);              // the soffit
+      rake(oakw, .085, .065, balX, y0 + RH, zf0 - dz*.14, balX, yT + RH, zT + dz*.14); // handrail
+      for(let i=0;i<n;i++){
+        const y = y0 + (i + 1)*RISE;
+        for(const o of [.27, .73]){
+          const bh = RH - (1 - o)*RISE - .04;
+          mesh(balGeo, woodw, balX, y, zf0 + dz*(i + o)*GO, st).scale.y = bh/BALH;
+        }
+      }
+      return yT;
     }
-    addCollider(EST.x + 1.4, EST.x + 3.2, EST.z - 4.9, EST.z - 1.1);
-    addCollider(EST.x - 3.2, EST.x - 1.4, EST.z - 4.9, EST.z - .6);
-    addCollider(EST.x - 1.6, EST.x + 1.6, EST.z - 5.5, EST.z - 4.3);
+    // a level run of balustrade along z, or along x
+    function balRun(along, fixed, a0, a1, y0){
+      const h = RH - .04, nb = Math.max(2, Math.round(Math.abs(a1 - a0)/.21));
+      for(let i=0;i<nb;i++){
+        const t = (i + .5)/nb, c = a0 + (a1 - a0)*t;
+        const b4 = mesh(balGeo, woodw, along === 'z' ? fixed : c, y0,
+                                       along === 'z' ? c : fixed, st);
+        b4.scale.y = h/BALH;
+      }
+      if(along === 'z') rake(oakw, .085, .065, fixed, y0 + h + .03, a0, fixed, y0 + h + .03, a1);
+      else { const m = box(Math.abs(a1 - a0), .065, .085, oakw, (a0 + a1)/2, y0 + h + .03, fixed, st);
+             shadeOn(m, true, true); }
+    }
+
+    const EZ0 = -1.2, LZ1 = -4.0, LZ0 = -5.5;                // flight foot, landing front and back
+    const y1 = flight(2.3, EZ0, -1, 10, 0, 1.5);             // up the east side
+    shadeOn(box(6.2, .1, LZ1 - LZ0, oakw, 0, y1 - .05, (LZ0 + LZ1)/2, st), true, true);   // the landing
+    box(6.2, .34, .06, plasterM, 0, y1 - .25, LZ1 - .03, st);                             // its fascia
+    for(const s2 of [-1,1]) box(.14, y1 - .1, .14, oakw, s2*3.0, (y1 - .1)/2, LZ0 + .12, st);
+    const y2 = flight(-2.3, LZ1, 1, 10, y1, -1.5);           // and down the west side of the well
+    balRun('x', LZ1 + .06, -1.4, 1.4, y1);                   // across the front of the landing
+    newel(1.5, 0, EZ0 + .1); newel(1.5, y1, LZ1 - .06);
+    newel(-1.5, y1, LZ1 - .06); newel(-1.5, y2, EZ0 + .08);
+    // the gallery round the well, at first-floor level
+    const GY = TOP;
+    shadeOn(box(6.4, .1, .9, oakw, 0, GY - .09, -.55, st), true, true);
+    shadeOn(box(.9, .1, 5.1, oakw, 2.65, GY - .09, -3.5, st), true, true);
+    shadeOn(box(6.4, .1, .96, oakw, 0, GY - .09, -6.4, st), true, true);
+    balRun('x', -1.0, -1.4, 3.1, GY);                        // the open side by the stair head
+    balRun('z', 2.2, -5.95, -1.05, GY);
+    balRun('x', -5.95, -3.1, 3.1, GY);
+    // a rope across the foot, as in a house that lets people in
+    for(const bx of [1.5, 3.1]) shadeOn(box(.08, .92, .08, M.copper, bx, .46, EZ0 + .38, st), true, false);
+    { const rp = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+        v3(1.5, .84, EZ0 + .38), v3(2.3, .64, EZ0 + .38), v3(3.1, .84, EZ0 + .38)]), 10, .025, 6),
+        new THREE.MeshStandardMaterial({ color:0x8a2b36, roughness:.9 }));
+      st.add(rp); }
+    // you can stand in the well and look up, but not climb
+    addCollider(EST.x + 1.45, EST.x + 3.15, EST.z - 4.05, EST.z - 1.1);
+    addCollider(EST.x - 3.15, EST.x - 1.45, EST.z - 4.05, EST.z - 1.1);
+    addCollider(EST.x - 3.15, EST.x + 3.15, EST.z - 5.6, EST.z - 3.95);
   })();
 
   // the dome over the well, with its top-light, and the daylight down it
@@ -3419,7 +3479,7 @@ function groundAt(x, z){
   // ---- what is in the rooms -----------------------------------------
   const RUGI = texRug('#8a4a3c', '#e0d2b4', '#4a5f6a');
   function rugAt(cx, cz, w, d2, rot){
-    const m = mesh(G.plane, new THREE.MeshStandardMaterial({ map:RUGI, roughness:.98 }), cx, PLINTH + .012, cz, house);
+    const m = mesh(G.plane, new THREE.MeshStandardMaterial({ map:RUGI, roughness:.98 }), cx, PLINTH + .024, cz, house);
     m.rotation.x = -Math.PI/2; m.rotation.z = rot || 0; m.scale.set(w, d2, 1); m.receiveShadow = true;
   }
   // four painted canvases, so the frames have something in them
@@ -3513,15 +3573,24 @@ function groundAt(x, z){
   }
   function diningChair(cx, cz, rotY){
     const f = new THREE.Group(); f.position.set(cx, PLINTH, cz); f.rotation.y = rotY; house.add(f);
-    shadeOn(box(.46, .05, .44, oakw, 0, .46, 0, f), true, true);
-    box(.42, .06, .4, new THREE.MeshStandardMaterial({ color:0x7a3b42, roughness:.9 }), 0, .5, 0, f);
-    for(const s of [-1,1]) for(const s2 of [-1,1]){
-      const h = s2 < 0 ? 1.02 : .46;
-      mesh(new THREE.CylinderGeometry(.024, .03, h, 7), oakw, s*.2, h/2, s2*.19, f);
+    const SH = .455, seat = new THREE.MeshStandardMaterial({ color:0x6d3b40, roughness:.92 });
+    for(const s of [-1,1]) box(.42, .05, .038, oakw, 0, SH - .03, s*.185, f);        // seat rails
+    for(const s of [-1,1]) box(.038, .05, .37, oakw, s*.19, SH - .03, 0, f);
+    shadeOn(box(.4, .055, .35, seat, 0, SH + .012, 0, f), true, true);               // the drop-in seat
+    for(const s of [-1,1]){                                                          // tapered legs
+      const fl = mesh(new THREE.CylinderGeometry(.021, .031, SH - .03, 4), oakw, s*.182, (SH - .03)/2, .172, f);
+      fl.rotation.y = Math.PI/4;
+      const bl = mesh(new THREE.CylinderGeometry(.019, .031, 1.02, 4), oakw, s*.182, .48, -.2, f);
+      bl.rotation.y = Math.PI/4; bl.rotation.x = -.045;
     }
-    box(.42, .09, .04, oakw, 0, 1.0, -.19, f);
-    const splat = box(.16, .44, .03, oakw, 0, .76, -.19, f);
-    box(.42, .06, .04, oakw, 0, .56, -.19, f);
+    for(const s of [-1,1]) box(.022, .022, .33, oakw, s*.172, .165, -.015, f);       // stretchers
+    box(.32, .022, .022, oakw, 0, .165, .0, f);
+    box(.37, .045, .038, oakw, 0, .55, -.205, f);                                    // the back rails
+    const cr = box(.4, .085, .05, oakw, 0, .965, -.222, f); cr.rotation.x = .05;     // crest
+    box(.3, .055, .05, oakw, 0, .9, -.219, f);
+    box(.085, .33, .024, oakw, 0, .735, -.212, f);                                   // a vase splat
+    box(.15, .075, .024, oakw, 0, .885, -.214, f);
+    box(.12, .06, .024, oakw, 0, .59, -.21, f);
     return f;
   }
   function bookcase(cx, cz, rotY, w, h){
@@ -3561,7 +3630,7 @@ function groundAt(x, z){
   { const DW = 1.6, DH = 3.1, DD = WT + BRKD + .02, DZ = IHD + DD/2 - .01;
     for(const s2 of [-1,1]) box(.15, DH + .2, DD, woodw, s2*(DW/2 + .055), PLINTH + DH/2, DZ, house);
     box(DW + .32, .12, DD, woodw, 0, PLINTH + DH - .06, DZ, house);   // the soffit
-    box(DW + .32, .06, DD, flagM, 0, PLINTH - .02, DZ, house);         // the threshold
+    box(DW + .32, .15, DD, flagM, 0, PLINTH - .065, DZ, house);        // the threshold
   }
   for(const s2 of [-1,1]) portrait(s2*1.7, PLINTH + 2.0, IHD - .07, Math.PI, 1.0, 1.3);  // either side of the door
   // a lantern hanging in the vestibule
@@ -3579,7 +3648,7 @@ function groundAt(x, z){
   // the staircase hall
   portrait(-3.1, PLINTH + 2.1, -2.0, Math.PI/2, 1.2, 1.6);
   portrait(3.1, PLINTH + 2.1, -2.0, -Math.PI/2, 1.2, 1.6);
-  { const cl = new THREE.Group(); cl.position.set(2.7, PLINTH, .9); cl.rotation.y = -Math.PI/2; house.add(cl);
+  { const cl = new THREE.Group(); cl.position.set(2.82, PLINTH, -.3); cl.rotation.y = -Math.PI/2; house.add(cl);
     shadeOn(box(.5, 2.0, .3, oakw, 0, 1.0, 0, cl), true, true);          // a long-case clock
     box(.62, .5, .36, oakw, 0, 2.2, 0, cl);
     mesh(new THREE.CircleGeometry(.2, 18), new THREE.MeshStandardMaterial({ color:0xf0e8d0, roughness:.5 }), 0, 2.2, .19, cl);
@@ -7779,7 +7848,7 @@ function updateDucks(dt){
       }
       if(best) HOUSE.light.position.set(best.x, HOUSE.y, best.z);
     }
-    HOUSE.light.intensity += ((inHouse ? .8 : 0) - HOUSE.light.intensity)*Math.min(1, dt*3);
+    HOUSE.light.intensity += ((inHouse ? .42 : 0) - HOUSE.light.intensity)*Math.min(1, dt*3);
   }
   // the heron: still for a long time, then a slow turn of the head, and if
   // you come too close it gives up on you and stalks away a few steps

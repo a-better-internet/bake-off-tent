@@ -209,10 +209,16 @@ of the steps you look back down the avenue at the tent.
   the **staircase hall**; the **drawing room** and **library** on one side, the
   **dining room** and **morning room** on the other. Doorways connect them, so
   you can walk a circuit of the whole floor and back out again.
-  - The **stair** is the one in the listing: three flights round an open well,
-    turned balusters, panelled newels, a ramped handrail, a gallery at the top
-    and a domed top-light over the well, with a lantern on the roof outside to
-    match it.
+  - The **front door** opens inwards as you come up to it, and from the step
+    you look straight down the vestibule, under the hanging lantern, through
+    the centre arch and into the staircase hall.
+  - The **stair** is the one in the listing: two flights and a landing round an
+    open well, rising twenty risers to the first floor. Treads with nosings on
+    closed strings, plastered soffits underneath, turned balusters standing on
+    the treads, panelled newels with ball finials, an oak handrail, a gallery
+    round the well at the top and a domed top-light over it, with a lantern on
+    the roof outside to match. You can walk into the well and look up it; the
+    flights themselves are roped off.
   - **Chimneypieces**, one to a room, each with a breast standing proud of the
     wall, a slip and hearth, a grate and a fire nearly out: twisted columns in
     the drawing room, black marble in the library, paired colonnettes in the
@@ -221,10 +227,14 @@ of the steps you look back down the avenue at the tent.
   - **Rococo pelmets** over the windows on the garden front and the east side,
     as the listing has them, with shutters folded back into the reveals and a
     window board under each sill.
-  - Fielded panelling with a dado and cornice all round, oak boards, painted
-    portraits in gilt frames, candle chandeliers, a long-case clock, bookcases
-    full of books, a laid dining table, sofas and wing chairs. Two of the wing
-    chairs you can sit in.
+  - Fielded panelling with a dado and cornice all round, and each room hung as
+    it would be: **oak** in the vestibule, the staircase hall and the library,
+    sage green in the drawing room, deep red in the dining room, ochre in the
+    morning room, with the joinery painted off-white against it.
+  - Oak boards underfoot and stone flags in the vestibule, painted portraits in
+    gilt frames, candle chandeliers on sweeping arms, a long-case clock,
+    bookcases full of books, a laid dining table with splat-back chairs, sofas
+    and wing chairs. Two of the wing chairs you can sit in.
   - The rooms light themselves as you walk through them, and the windows on
     the ground floor are glazed clear, so you can see out of the house as well
     as into it.
@@ -378,6 +388,28 @@ Noel is a procedurally built and procedurally animated character:
 Verified by driving the navigation at a fixed 60Hz for ten simulated minutes:
 roughly 600m walked, **zero frames with any part of him inside geometry**, and
 a longest stall of half a second even with the player parked in his path.
+
+## Keeping surfaces apart
+
+Two opaque faces in the same plane flicker. Which one wins is decided by
+rounding in the depth buffer, so it changes with the angle, the distance and
+the machine — and a room full of it looks broken. The rule here is: **parallel
+faces are kept at least 2cm apart, or one of them is deleted.** A wall has one
+surface, not a brick leaf and a plaster skin in the same plane; a plinth stops
+short of the floor it carries; a partition runs a little past the ceiling and
+a little below the floorboards rather than meeting them exactly; an architrave
+laps over the reveal it frames instead of finishing flush with it.
+
+`tools/zfight.js` finds the ones that slip through. It fires rays out of a
+list of standing points and reports every pair of parallel surfaces within a
+few millimetres of each other, grouped by the materials involved:
+
+```bash
+python3 -m http.server 8765 &
+node tools/zfight.js '[[9,3.2,-69],[9,3.2,-74.5],[13,3.2,-70],[4,3.2,-77]]'
+```
+
+Run it after anything that changes the architecture.
 
 ## How it's built
 
