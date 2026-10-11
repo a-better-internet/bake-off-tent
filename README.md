@@ -42,7 +42,7 @@ On a touch screen: one finger looks, the on-screen pad walks, `USE` interacts.
 
 ## What's in there
 
-Ninety-three things respond to `Space`, and the counter in the corner tracks
+Ninety-five things respond to `Space`, and the counter in the corner tracks
 how many you've found:
 
 - **12 ovens** built in under the hobs, on the baker's side — a slide-and-hide
@@ -61,14 +61,14 @@ how many you've found:
 - **12 hobs** — black ceramic glass; the zones glow red under the glass.
 - **3 cameras** — go live and the head pans to keep you in frame, tally light
   and all.
-- **3 cloches** on the judging table, **1 bell**, **1 challenge board** that
-  rewrites itself each time you read it, **2 pantries**, **3 picnic benches**
-  and **3 deck chairs** out on the grass.
+- **3 cloches** on the judging table, **1 bell**, **2 pantries**,
+  **3 picnic benches** and **3 deck chairs** out on the grass.
 - **The ducks**, from the end of the jetty down at the pond: throw them
   something and every duck on the water paddles over.
 - **Chairs you can actually sit in** — the deckchairs, the picnic benches,
   the armchairs in the tea nook, the bench by the pond, the bench on the
-  house terrace and the four chairs round the judges' table. `Space` eases
+  house terrace, the four chairs round the judges' table and the wing chairs
+  in the drawing room and the morning room. `Space` eases
   you down into the seat and takes the controls; `Space` again, or any
   attempt to walk, gets you up. A deckchair puts your eye less than a metre
   off the grass and tips your head back, which is the point of a deckchair.
@@ -95,7 +95,9 @@ location rather than a backdrop:
   boards, and proper striped deckchairs — a back frame and a seat frame that
   cross and pivot, a notched strut, round rails, and the canvas slung from the
   top rail to the front one so it sags into a seat.
-- **The judges' tent** stands off on the east lawn: a square pagoda with one
+- **The judges' tent** stands right away behind the marquee, on the opposite
+  side from the entrance, with no path to it — the judges are driven round the
+  back. It is a square pagoda with one
   tall point, a scalloped valance, union jacks along the eaves and big clear
   windows, on a raised timber deck with packers under it. Inside is somebody's
   kitchen — tongue-and-groove, a scrubbed farmhouse table and four painted
@@ -148,7 +150,7 @@ No two are dressed alike: the jars, the back row and the work in progress are
 drawn from shuffled pools, and some bakers leave flour all over the worktop.
 
 Every texture — timber, canvas, grass, gravel, painted shaker panels, brick,
-slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
+slate, marble, old portraits, bunting, tea towels, the name cards — is painted into a
 `<canvas>` at boot. There are no image files anywhere.
 
 ## Trees, hedges and turf
@@ -178,10 +180,14 @@ slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
 
 ## Welford Park
 
-Across the park to the south stands the house, and you can walk to it. The
-way out of the garden is a gap in the south hedge between two stone piers,
-then a gravel walk between an avenue of limes — the walk the bakers come down
-every morning.
+Across the park to the south stands the house, and you can walk to it — and
+into it. The house faces the tent square on: step out of the entrance and it
+is straight ahead of you, through a gap in the south hedge between two stone
+piers, then a gravel walk between an avenue of limes, dead straight, with
+nothing standing in it. At the far end the walk runs into the foot of the
+terrace steps and the steps run up to the front door. It is the walk the
+bakers come down every morning, and it works in both directions: from the top
+of the steps you look back down the avenue at the tent.
 
 - **The house** is red brick of seven bays and three storeys, its middle
   three breaking forward under a great white pediment. Every window is a real
@@ -197,7 +203,43 @@ every morning.
   function lifts you as you climb, so you walk up onto the terrace rather
   than through it. There is a bench at the top, looking down the park at the
   tent.
-- **St Gregory's** is through the trees to the west, with the round Norman
+- **Inside.** The front door opens as you come up to it and you can walk in.
+  The ground floor is the one the Grade I listing describes, laid out round a
+  spine: a flagged **vestibule** with fielded panelling and three arches into
+  the **staircase hall**; the **drawing room** and **library** on one side, the
+  **dining room** and **morning room** on the other. Doorways connect them, so
+  you can walk a circuit of the whole floor and back out again.
+  - The **stair** is the one in the listing: three flights round an open well,
+    turned balusters, panelled newels, a ramped handrail, a gallery at the top
+    and a domed top-light over the well, with a lantern on the roof outside to
+    match it.
+  - **Chimneypieces**, one to a room, each with a breast standing proud of the
+    wall, a slip and hearth, a grate and a fire nearly out: twisted columns in
+    the drawing room, black marble in the library, paired colonnettes in the
+    dining room, a plain painted one in the morning room. All but the last
+    have an overmantel glass in a gilt frame.
+  - **Rococo pelmets** over the windows on the garden front and the east side,
+    as the listing has them, with shutters folded back into the reveals and a
+    window board under each sill.
+  - Fielded panelling with a dado and cornice all round, oak boards, painted
+    portraits in gilt frames, candle chandeliers, a long-case clock, bookcases
+    full of books, a laid dining table, sofas and wing chairs. Two of the wing
+    chairs you can sit in.
+  - The rooms light themselves as you walk through them, and the windows on
+    the ground floor are glazed clear, so you can see out of the house as well
+    as into it.
+
+  Worked from the Historic England Grade I listing (vestibule: fielded
+  panelling and a fireplace with paired colonnettes; staircase hall: three
+  flights, turned balusters, domed top-light; drawing room: rococo pelmets and
+  a fireplace with twisted Corinthian columns; library: rococo pelmets and a
+  marble fireplace), plus the house's own history — about 1652, remodelled by
+  Thomas Archer around 1700, interior much altered in 1840. It is an
+  impression of the place, not a survey: the vestibule here is too narrow
+  between its two doorways to hold the colonnetted chimneypiece, so the dining
+  room has it.
+- **St Gregory's** is through the trees to the west, square on to the tent as
+  the house is, with the round Norman
   tower Welford is known for: a tall flint drum with round-headed windows, a
   shorter stone octagon above it on coupled columns and blind arcading, clock
   faces north and south, and a stone spire with gabled lucarnes round its
@@ -398,5 +440,8 @@ and `renderFrame()` for deterministic screenshots.
 ## Credits
 
 A fan-made homage, built from reference photographs of the Welford Park tent.
-Not affiliated with the programme or its makers; the bakers' names are
-invented.
+The house and church are worked from photographs and from the Historic
+England Grade I listing for *Welford Park and Walls to East and West* (list
+entry 1264078), the Welford Park estate's own history pages, and the
+Wikipedia article on the house. Not affiliated with the programme or its
+makers; the bakers' names are invented.
