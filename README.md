@@ -33,6 +33,7 @@ if neither is reachable.
 | `O` | floor plan (top-down, roof lifted off) |
 | `3` | dolly view (3/4 isometric, roof lifted off) |
 | `N` | send Noel off, and bring him back |
+| `Space` (in a chair) | sit down, and get up again |
 | `1` | back to first person |
 | wheel | zoom, 45°–95° |
 | `H` | hide the key card |
@@ -41,7 +42,7 @@ On a touch screen: one finger looks, the on-screen pad walks, `USE` interacts.
 
 ## What's in there
 
-Seventy-nine things respond to `Space`, and the counter in the corner tracks
+Ninety-three things respond to `Space`, and the counter in the corner tracks
 how many you've found:
 
 - **12 ovens** built in under the hobs, on the baker's side — a slide-and-hide
@@ -64,8 +65,13 @@ how many you've found:
   rewrites itself each time you read it, **2 pantries**, **3 picnic benches**
   and **3 deck chairs** out on the grass.
 - **The ducks**, from the end of the jetty down at the pond: throw them
-  something and every duck on the water paddles over. And **a bench** on the
-  bank to sit on afterwards.
+  something and every duck on the water paddles over.
+- **Chairs you can actually sit in** — the deckchairs, the picnic benches,
+  the armchairs in the tea nook, the bench by the pond, the bench on the
+  house terrace and the four chairs round the judges' table. `Space` eases
+  you down into the seat and takes the controls; `Space` again, or any
+  attempt to walk, gets you up. A deckchair puts your eye less than a metre
+  off the grass and tips your head back, which is the point of a deckchair.
 
 There is also **Noel**, who wanders the tent and the lawn on a fixed round and
 will stop for a word. Everything on a bench is worked from the baker's side,
@@ -89,6 +95,13 @@ location rather than a backdrop:
   boards, and proper striped deckchairs — a back frame and a seat frame that
   cross and pivot, a notched strut, round rails, and the canvas slung from the
   top rail to the front one so it sags into a seat.
+- **The judges' tent** stands off on the east lawn: a square pagoda with one
+  tall point, a scalloped valance, union jacks along the eaves and big clear
+  windows, on a raised timber deck with packers under it. Inside is somebody's
+  kitchen — tongue-and-groove, a scrubbed farmhouse table and four painted
+  chairs, a duck-egg dresser of crockery, a chest of drawers marked *Tin*,
+  copper jelly moulds on the wall, herbs in wooden troughs, a cake dome and a
+  jug of flowers.
 - **Through the field gate** in the west hedge — a pair of five-bar gates that
   swing open as you come up — a trodden path runs across a paddock of long
   meadow grass and wild flowers to the pond.
@@ -163,6 +176,35 @@ slate, the chalkboard, bunting, tea towels, the name cards — is painted into a
 - **Beyond the hedge** the park rolls up into the downs, in a loose patchwork
   of pasture and hay, with copses and woodland belts on the rising ground.
 
+## Welford Park
+
+Across the park to the south stands the house, and you can walk to it. The
+way out of the garden is a gap in the south hedge between two stone piers,
+then a gravel walk between an avenue of limes — the walk the bakers come down
+every morning.
+
+- **The house** is red brick of seven bays and three storeys, its middle
+  three breaking forward under a great white pediment. Every window is a real
+  twelve-pane sash in a brick reveal, with a stone sill and a flat arch over
+  it; there are quoins up every corner, a modillion cornice, a hipped slate
+  roof with dormers in it, four chimney stacks with pots, a pedimented
+  doorcase on consoles with a fanlight, a lower service wing and ivy up the
+  east end.
+- **The terrace and the steps.** The house stands on a raised terrace behind
+  an old brick retaining wall, and a flight of stone steps comes down off it
+  to the park — flanked by banks of planting and lined with terracotta pots,
+  as in the photographs. The ground really is higher up there: a height
+  function lifts you as you climb, so you walk up onto the terrace rather
+  than through it. There is a bench at the top, looking down the park at the
+  tent.
+- **St Gregory's** is through the trees to the west, with the round Norman
+  tower Welford is known for: a tall flint drum with round-headed windows, a
+  shorter stone octagon above it on coupled columns and blind arcading, clock
+  faces north and south, and a stone spire with gabled lucarnes round its
+  foot. Flint nave and chancel, stepped lancets in the east wall, a south
+  porch, a flint churchyard wall, a lychgate and headstones leaning in the
+  grass.
+
 ## The marquee
 
 The roof is a peaked "Capri" frame, as the real one is: four pagoda points
@@ -225,6 +267,13 @@ clumps of reeds that move in the wind, bulrushes, yellow flag iris, drifts of
 water lilies with a few in flower, mossy stones half sunk in the bank, two
 weeping willows, a chestnut and a birch, a weathered jetty with a rail and a
 lifebuoy, a floating duck house, and a bench looking out over the water.
+
+On the water there is also **a clinker rowing boat** tied to the jetty, which
+lifts on her line; **a grey heron** standing in the shallows, who turns his
+head to watch you and keeps watching; **moorhens** fussing along the margin;
+**dragonflies** hanging and darting over the open water; and **fish** that
+rise, break the surface and leave rings. A **brook** runs in from the west
+over a bed of silt and stones, with a plank bridge over it.
 
 The **ducks** are mallards — drakes with bottle-green heads, white collars,
 chestnut breasts, grey flanks and the blue speculum; mottled brown hens — and
@@ -314,6 +363,17 @@ One file, one IIFE, following the house engine style guide:
   contribution is held at `envMapIntensity = 0.20`: it is a sheen, not a light.
   Polished steel and chrome take more; materials that should see no sky at all
   (the inside of an oven) opt out.
+- **Sitting down** is a pose, not an animation: a seat records where you end
+  up, which way you face, how high your eye is and how far back you lean, and
+  the player eases between standing and sitting. The controls are taken away
+  while you are in it, which is what makes getting up feel like a decision.
+- **Ground height** — the world is flat except where it isn't. `groundAt()`
+  returns the height under any point, which is how the house terrace can be
+  1.1m up with a walkable flight of steps onto it, and the grass knows to
+  stand on the terrace rather than under it.
+- **Rotated colliders** — the house and church do not stand square to the
+  world, so their colliders carry their own angle and are tested in their own
+  frame, rather than being approximated by a staircase of boxes.
 - **Shadows go where you go** — the sun's shadow map covers 80m round the
   player, so the pond gets shadows as well as the tent; its centre steps a
   whole shadow texel at a time in the light's own frame, so edges don't crawl
@@ -328,7 +388,7 @@ One file, one IIFE, following the house engine style guide:
   17500:1 ratio and the depth buffer visibly fights on distant coplanar
   surfaces.
 - **Interaction points** are nudged out of solid geometry after the world is
-  built, so every one of the 79 is somewhere a person can actually stand. Where
+  built, so every one of the 93 is somewhere a person can actually stand. Where
   several share a spot, the one you are looking at wins.
 
 `window.TENT` exposes the player, the camera, the prop registry, `blocked()`
